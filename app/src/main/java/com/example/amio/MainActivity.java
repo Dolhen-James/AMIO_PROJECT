@@ -26,6 +26,7 @@ import java.util.Locale;
  * - Display sensor data (TP2)
  *
  * TP1: Basic service control and status display
+ * TP2: Display sensor count and lights on count
  * TP3: BroadcastReceiver for service communication
  */
 public class MainActivity extends AppCompatActivity {
@@ -72,6 +73,11 @@ public class MainActivity extends AppCompatActivity {
         tvServiceStatus = findViewById(R.id.tvServiceStatus);
         tvLastCheck = findViewById(R.id.tvLastCheck);
         tvSensorData = findViewById(R.id.tvSensorData);
+
+        // Initialize sensor data display
+        tvSensorData.setText("No data yet - waiting for service...");
+        Log.d(TAG, "UI elements initialized - tvSensorData is " + (tvSensorData != null ? "NOT NULL" : "NULL"));
+
     }
 
     /**
@@ -94,17 +100,35 @@ public class MainActivity extends AppCompatActivity {
         serviceReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "BroadcastReceiver.onReceive() called");
+
                 if (MainService.ACTION_RESULT.equals(intent.getAction())) {
+                    Log.d(TAG, "Correct action received: " + MainService.ACTION_RESULT);
+
                     // Extract data from broadcast
                     String status = intent.getStringExtra(MainService.EXTRA_STATUS);
                     long timestamp = intent.getLongExtra(MainService.EXTRA_TIMESTAMP, 0);
+                    int sensorCount = intent.getIntExtra(MainService.EXTRA_SENSOR_COUNT, 0);
+                    int lightsOnCount = intent.getIntExtra(MainService.EXTRA_LIGHTS_ON_COUNT, 0);
+
+                    // Extract detailed sensor data (JSON format)
+                    String sensorDataJson = intent.getStringExtra(MainService.EXTRA_SENSOR_DETAILS);
+
+                    Log.d(TAG, "Received broadcast - status: " + status +
+                            ", sensors: " + sensorCount +
+                            ", lights_on: " + lightsOnCount);
+                    Log.d(TAG, "Sensor JSON length: " + (sensorDataJson != null ? sensorDataJson.length() : "null"));
+                    if (sensorDataJson != null && sensorDataJson.length() < 500) {
+                        Log.d(TAG, "Sensor JSON: " + sensorDataJson);
+                    }
 
                     // Update UI on main thread
                     updateLastCheck(timestamp);
+                    updateSensorData(sensorCount, lightsOnCount, status, sensorDataJson);
 
-                    Log.d(TAG, "Received broadcast from service: " + status);
-
-                    // TODO TP2: Update sensor data display
+                    Log.d(TAG, "UI update completed");
+                } else {
+                    Log.w(TAG, "Received broadcast with unexpected action: " + intent.getAction());
                 }
             }
         };
@@ -119,6 +143,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             registerReceiver(serviceReceiver, filter);
         }
+
+        Log.d(TAG, "BroadcastReceiver registered for action: " + MainService.ACTION_RESULT);
     }
 
     /**
@@ -174,6 +200,91 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * Update sensor data display (TP2)
+     *
+     * @param sensorCount Total number of sensors tracked
+     * @param lightsOnCount Number of sensors with lights detected as ON
+     * @param status Status message from service
+     * @param sensorDataJson JSON string containing detailed sensor information
+     */
+    private void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson) {
+        Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
+                   ", lightsOnCount=" + lightsOnCount + ", status=" + status);
+
+        StringBuilder sb = new StringBuilder();
+
+        // Summary header
+        sb.append("═══════════════════════════════\n");
+        sb.append("📊 SUMMARY\n");
+        sb.append("═══════════════════════════════\n");
+        sb.append("Total Sensors: ").append(sensorCount).append("\n");
+        sb.append("Lights ON: ").append(lightsOnCount).append("\n");
+        sb.append("Status: ").append(status).append("\n\n");
+
+        // Parse and display individual sensor details
+        if (sensorDataJson != null && !sensorDataJson.isEmpty()) {
+            try {
+                org.json.JSONArray sensorsArray = new org.json.JSONArray(sensorDataJson);
+
+                Log.d(TAG, "Parsed JSON array with " + sensorsArray.length() + " sensors");
+
+                sb.append("═══════════════════════════════\n");
+                sb.append("🔍 SENSOR DETAILS\n");
+                sb.append("═══════════════════════════════\n\n");
+
+                for (int i = 0; i < sensorsArray.length(); i++) {
+                    org.json.JSONObject sensor = sensorsArray.getJSONObject(i);
+
+                    String mote = sensor.optString("mote", "unknown");
+                    String label = sensor.optString("label", "unknown");
+                    double value = sensor.optDouble("value", 0.0);
+                    long timestamp = sensor.optLong("timestamp", 0);
+                    boolean lightOn = sensor.optBoolean("lightOn", false);
+
+                    Log.d(TAG, "Sensor " + i + ": mote=" + mote + ", value=" + value + ", lightOn=" + lightOn);
+
+                    // Format timestamp
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                    String timeStr = sdf.format(new Date(timestamp));
+
+                    // Format sensor entry with status indicator
+                    String indicator = lightOn ? "💡 ON " : "🌙 OFF";
+                    sb.append(indicator).append(" │ ").append(mote).append("\n");
+                    sb.append("├─ Label: ").append(label).append("\n");
+                    sb.append("├─ Value: ").append(String.format(Locale.getDefault(), "%.2f", value)).append("\n");
+                    sb.append("└─ Time: ").append(timeStr).append("\n");
+
+                    if (i < sensorsArray.length() - 1) {
+                        sb.append("\n");
+                    }
+                }
+
+            } catch (org.json.JSONException e) {
+                Log.e(TAG, "Error parsing sensor details JSON", e);
+                sb.append("\n⚠️ Error parsing sensor details\n");
+            }
+        } else {
+            Log.w(TAG, "sensorDataJson is null or empty");
+            sb.append("No sensor details available yet...\n");
+        }
+
+        String finalText = sb.toString();
+        Log.d(TAG, "Setting tvSensorData text (length=" + finalText.length() + ")");
+        Log.d(TAG, "First 200 chars: " + (finalText.length() > 200 ? finalText.substring(0, 200) : finalText));
+
+        tvSensorData.setText(finalText);
+
+        // Change text color based on lights detected
+        if (lightsOnCount > 0) {
+            tvSensorData.setTextColor(0xFFFF9800); // Orange - lights detected
+        } else {
+            tvSensorData.setTextColor(0xFF4CAF50); // Green - all clear
+        }
+
+        Log.d(TAG, "updateSensorData() completed successfully");
+    }
+
+    /**
      * Check if a specific service is running
      *
      * @param serviceClass The service class to check
@@ -194,16 +305,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume() called - MainActivity is now visible");
         // Update service status when activity resumes
         updateServiceStatus();
+
+        // If service is running, request an immediate update
+        if (isServiceRunning) {
+            Log.d(TAG, "Service is running - requesting immediate data update");
+            Intent updateRequest = new Intent(this, MainService.class);
+            updateRequest.setAction(MainService.ACTION_REQUEST_UPDATE);
+            startService(updateRequest);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause() called - MainActivity going to background");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "onDestroy() called - unregistering receiver");
         // Unregister broadcast receiver to prevent memory leaks
         if (serviceReceiver != null) {
             unregisterReceiver(serviceReceiver);
+            serviceReceiver = null;
         }
     }
 }

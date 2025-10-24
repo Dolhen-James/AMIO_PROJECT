@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
-import androidx.preference.PreferenceManager;
 
 /**
  * MyBootBroadcastReceiver - Receives BOOT_COMPLETED broadcast
@@ -20,7 +19,7 @@ public class MyBootBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences prefs = context.getSharedPreferences("amio_prefs", Context.MODE_PRIVATE);
             boolean startServiceOnBoot = prefs.getBoolean("start_service_on_boot", false);
             Log.d("MyBootBroadcastReceiver", "onReceive: startServiceOnBoot=" + startServiceOnBoot);
 
