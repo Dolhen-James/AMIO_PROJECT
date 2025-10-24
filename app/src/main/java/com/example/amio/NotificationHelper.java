@@ -37,11 +37,9 @@ public class NotificationHelper {
     // Notification configuration
     private static final String CHANNEL_ID = "amio_alerts_channel";
     private static final int NOTIFICATION_ID = 1001;
-    private static final long NOTIFICATION_COOLDOWN_MS = 5 * 1000; // 5 seconds
 
     private final Context context;
     private final SharedPreferences prefs;
-    private final ConcurrentHashMap<String, Long> lastNotificationTime = new ConcurrentHashMap<>();
 
     public NotificationHelper(Context context) {
         this.context = context;
@@ -86,12 +84,6 @@ public class NotificationHelper {
             return;
         }
 
-        // Cooldown check - use a global key for grouped notifications
-        String cooldownKey = "grouped_notification";
-        if (!checkCooldown(cooldownKey)) {
-            return;
-        }
-
         // Build notification content
         String title = buildNotificationTitle(motesOn, motesOff);
         String text = buildNotificationText(motesOn, motesOff);
@@ -128,7 +120,6 @@ public class NotificationHelper {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 notificationManager.notify(NOTIFICATION_ID, builder.build());
-                updateCooldown(cooldownKey);
                 vibrateDevice(200);
                 Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
             } else {
@@ -136,7 +127,6 @@ public class NotificationHelper {
             }
         } else {
             notificationManager.notify(NOTIFICATION_ID, builder.build());
-            updateCooldown(cooldownKey);
             vibrateDevice(200);
             Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
         }
@@ -215,32 +205,6 @@ public class NotificationHelper {
         }
 
         return bigText.toString();
-    }
-
-    /**
-     * Check if enough time has passed since last notification (cooldown)
-     *
-     * @param key Cooldown key
-     * @return true if notification can be sent, false if still in cooldown
-     */
-    private boolean checkCooldown(String key) {
-        Long lastTime = lastNotificationTime.get(key);
-        long currentTime = System.currentTimeMillis();
-
-        if (lastTime != null && (currentTime - lastTime) < NOTIFICATION_COOLDOWN_MS) {
-            long remainingCooldown = (NOTIFICATION_COOLDOWN_MS - (currentTime - lastTime)) / 1000;
-            Log.d(TAG, "Notification cooldown active - wait " + remainingCooldown + " seconds");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Update cooldown timestamp for a given key
-     */
-    private void updateCooldown(String key) {
-        lastNotificationTime.put(key, System.currentTimeMillis());
     }
 
     /**
