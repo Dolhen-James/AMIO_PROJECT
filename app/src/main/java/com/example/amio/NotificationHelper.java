@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -39,10 +40,12 @@ public class NotificationHelper {
     private static final long NOTIFICATION_COOLDOWN_MS = 5 * 1000; // 5 seconds
 
     private final Context context;
+    private final SharedPreferences prefs;
     private final ConcurrentHashMap<String, Long> lastNotificationTime = new ConcurrentHashMap<>();
 
     public NotificationHelper(Context context) {
         this.context = context;
+        this.prefs = context.getSharedPreferences("amio_prefs", Context.MODE_PRIVATE);
         createNotificationChannel();
     }
 
@@ -75,6 +78,13 @@ public class NotificationHelper {
      */
     public void sendGroupedNotification(List<String> motesOn, List<String> motesOff) {
         Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
+
+        // Check if notifications are enabled in preferences
+        boolean notificationsEnabled = prefs.getBoolean("pref_notifications_enabled", true);
+        if (!notificationsEnabled) {
+            Log.d(TAG, "Notifications disabled in preferences - skipping notification");
+            return;
+        }
 
         // Cooldown check - use a global key for grouped notifications
         String cooldownKey = "grouped_notification";
@@ -287,4 +297,3 @@ public class NotificationHelper {
         }
     }
 }
-

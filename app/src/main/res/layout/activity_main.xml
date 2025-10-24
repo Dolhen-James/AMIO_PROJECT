@@ -4,84 +4,96 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <!-- Title -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="AMIO Light Detection Service"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Toggle button to start/stop service -->
-    <Button
-        android:id="@+id/btnToggleService"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start Service"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Service status display -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Service Status:"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/tvServiceStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stopped"
-        android:textColor="#FF0000"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Last check timestamp -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Last Check:"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/tvLastCheck"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Never"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Divider -->
+    <!-- Spacer for ActionBar - ensures content starts below it -->
     <View
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#CCCCCC"
-        android:layout_marginVertical="16dp" />
+        android:layout_height="?attr/actionBarSize" />
 
-    <!-- Sensor data list (for future TP2) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sensor Data:"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <ScrollView
+    <!-- Content with padding -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
+        <!-- Title -->
         <TextView
-            android:id="@+id/tvSensorData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AMIO Light Detection Service"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+        android:layout_height="wrap_content"
+        <!-- Toggle button to start/stop service -->
+        <Button
+            android:id="@+id/btnToggleService"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No data yet..."
-            android:textSize="14sp" />
+            android:text="Start Service"
+            android:layout_marginBottom="16dp" />
+        android:layout_height="wrap_content"
+        <!-- Service status display -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Service Status:"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+        android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/tvServiceStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stopped"
+            android:textColor="#FF0000"
+            android:layout_marginBottom="16dp" />
+        android:layout_height="wrap_content"
+        <!-- Last check timestamp -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last Check:"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+        android:background="#CCCCCC"
+        <TextView
+            android:id="@+id/tvLastCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Never"
+            android:layout_marginBottom="16dp" />
+        android:text="Sensor Data:"
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginVertical="16dp" />
+        android:layout_weight="1">
+        <!-- Sensor data list (for future TP2) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sensor Data:"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
 
-    </ScrollView>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
+            <TextView
+                android:id="@+id/tvSensorData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No data yet..."
+                android:textSize="14sp" />
+
+        </ScrollView>
+    </LinearLayout>
 </LinearLayout>

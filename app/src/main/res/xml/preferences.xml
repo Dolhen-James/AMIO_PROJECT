@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="General Settings"
+        android:key="pref_general">
+
+        <CheckBoxPreference
+            android:key="pref_service_enabled"
+            android:title="Enable Service"
+            android:summary="Enable or disable the background service"
+            android:defaultValue="true" />
+
+        <CheckBoxPreference
+            android:key="pref_boot_start"
+            android:title="Start on Boot"
+            android:summary="Automatically start service when device boots"
+            android:defaultValue="false"
+            android:dependency="pref_service_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Notification Settings"
+        android:key="pref_notifications">
+
+        <CheckBoxPreference
+            android:key="pref_notifications_enabled"
+            android:title="Enable Notifications"
+            android:summary="Show notifications for sensor alerts"
+            android:defaultValue="true" />
+
+        <CheckBoxPreference
+            android:key="pref_vibrate"
+            android:title="Vibrate"
+            android:summary="Vibrate on notifications"
+            android:defaultValue="true"
+            android:dependency="pref_notifications_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Service Settings"
+        android:key="pref_service">
+
+        <EditTextPreference
+            android:key="pref_polling_interval"
+            android:title="Polling Interval"
+            android:summary="Time between sensor data fetches (in seconds)"
+            android:defaultValue="10"
+            android:inputType="number" />
+
+        <EditTextPreference
+            android:key="pref_server_url"
+            android:title="Server URL"
+            android:summary="URL of the sensor data server"
+            android:defaultValue="http://192.168.1.100:8080"
+            android:inputType="textUri" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

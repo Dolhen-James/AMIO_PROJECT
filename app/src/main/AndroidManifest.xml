@@ -30,6 +30,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Settings activity -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
         <!-- Background service that periodically fetches sensor data -->
         <service android:name=".MainService" android:exported="false" />
 
