@@ -1,21 +1,11 @@
 package com.example.amio;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.IBinder;
-import android.os.Vibrator;
 import android.util.Log;
-
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,7 +16,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Calendar;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,11 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MainService extends Service {
 
     private static final String TAG = "MainService";
-
-    // Notification channel/id
-    private static final String CHANNEL_ID = "amio_alerts_channel";
-    private static final int NOTIFICATION_ID = 1001;
-    private static final long NOTIFICATION_COOLDOWN_MS = 5 * 1000; // 5 seconds for testing
 
     // Broadcast action for sending results to MainActivity
     public static final String ACTION_RESULT = "com.example.amio.ACTION_RESULT";
@@ -74,11 +60,11 @@ public class MainService extends Service {
     // Sensor state tracking - thread-safe map
     private final ConcurrentHashMap<String, SensorState> sensorStates = new ConcurrentHashMap<>();
 
-    // Track last notification time per sensor to prevent spam
-    private final ConcurrentHashMap<String, Long> lastNotificationTime = new ConcurrentHashMap<>();
-
     // Light detection threshold (calibration value)
     private double lightThreshold = SensorState.DEFAULT_LIGHT_THRESHOLD;
+
+    // Notification helper for all notification-related operations
+    private NotificationHelper notificationHelper;
 
     @Override
     public void onCreate() {
@@ -98,8 +84,8 @@ public class MainService extends Service {
             lightThreshold = SensorState.DEFAULT_LIGHT_THRESHOLD;
         }
 
-        // Create notification channel for alerts
-        createNotificationChannel();
+        // Initialize notification helper
+        notificationHelper = new NotificationHelper(this);
 
         // Start periodic data fetching
         startPeriodicFetch();
@@ -181,8 +167,8 @@ public class MainService extends Service {
             Log.d(TAG, "Parsing " + dataArray.length() + " sensor entries");
 
             // Track changes for grouped notification
-            java.util.List<String> motesJustTurnedOn = new java.util.ArrayList<>();
-            java.util.List<String> motesJustTurnedOff = new java.util.ArrayList<>();
+            List<String> motesJustTurnedOn = new ArrayList<>();
+            List<String> motesJustTurnedOff = new ArrayList<>();
 
             for (int i = 0; i < dataArray.length(); i++) {
                 JSONObject item = dataArray.getJSONObject(i);
@@ -228,7 +214,7 @@ public class MainService extends Service {
 
             // Send grouped notification if there are changes
             if (!motesJustTurnedOn.isEmpty() || !motesJustTurnedOff.isEmpty()) {
-                sendGroupedNotification(motesJustTurnedOn, motesJustTurnedOff);
+                notificationHelper.sendGroupedNotification(motesJustTurnedOn, motesJustTurnedOff);
             }
 
             Log.d(TAG, "Parsing complete. Total sensors tracked: " + sensorStates.size() +
@@ -240,244 +226,6 @@ public class MainService extends Service {
         }
     }
 
-    private void handleNewLightDetected(String mote, String label, double value, long timestamp) {
-        // This method is now deprecated - replaced by sendGroupedNotification
-        Log.d(TAG, "handleNewLightDetected: mote=" + mote + ", value=" + value);
-
-        try {
-            vibrateDevice(200);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in handleNewLightDetected", e);
-        }
-    }
-
-    /**
-     * Send a grouped notification showing all lights that just changed state
-     */
-    private void sendGroupedNotification(java.util.List<String> motesOn, java.util.List<String> motesOff) {
-        Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
-
-        // Cooldown check - use a global key for grouped notifications
-        String cooldownKey = "grouped_notification";
-        Long lastTime = lastNotificationTime.get(cooldownKey);
-        long currentTime = System.currentTimeMillis();
-        if (lastTime != null && (currentTime - lastTime) < NOTIFICATION_COOLDOWN_MS) {
-            long remainingCooldown = (NOTIFICATION_COOLDOWN_MS - (currentTime - lastTime)) / 1000;
-            Log.d(TAG, "Notification cooldown active - wait " + remainingCooldown + " seconds");
-            return;
-        }
-
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // Build title
-        String title;
-        int totalChanges = motesOn.size() + motesOff.size();
-        if (totalChanges == 1) {
-            if (!motesOn.isEmpty()) {
-                title = "💡 Lumière allumée: " + motesOn.get(0);
-            } else {
-                title = "🌙 Lumière éteinte: " + motesOff.get(0);
-            }
-        } else {
-            title = "🔄 " + totalChanges + " changements détectés";
-        }
-
-        // Build detailed text
-        StringBuilder text = new StringBuilder();
-
-        if (!motesOn.isEmpty()) {
-            text.append("💡 ALLUMÉES: ");
-            for (int i = 0; i < motesOn.size(); i++) {
-                text.append(motesOn.get(i));
-                if (i < motesOn.size() - 1) {
-                    text.append(", ");
-                }
-            }
-        }
-
-        if (!motesOff.isEmpty()) {
-            if (text.length() > 0) {
-                text.append("\n");
-            }
-            text.append("🌙 ÉTEINTES: ");
-            for (int i = 0; i < motesOff.size(); i++) {
-                text.append(motesOff.get(i));
-                if (i < motesOff.size() - 1) {
-                    text.append(", ");
-                }
-            }
-        }
-
-        // Build big text style for expanded view
-        StringBuilder bigText = new StringBuilder();
-        if (!motesOn.isEmpty()) {
-            bigText.append("💡 LUMIÈRES ALLUMÉES:\n");
-            for (String mote : motesOn) {
-                bigText.append("  • ").append(mote).append("\n");
-            }
-        }
-        if (!motesOff.isEmpty()) {
-            if (bigText.length() > 0) {
-                bigText.append("\n");
-            }
-            bigText.append("🌙 LUMIÈRES ÉTEINTES:\n");
-            for (String mote : motesOff) {
-                bigText.append("  • ").append(mote).append("\n");
-            }
-        }
-
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(text.toString())
-                .setStyle(new NotificationCompat.BigTextStyle()
-                    .bigText(bigText.toString()))
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .setSound(alarmSound)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                notificationManager.notify(NOTIFICATION_ID, builder.build());
-                lastNotificationTime.put(cooldownKey, currentTime);
-                vibrateDevice(200);
-                Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
-            } else {
-                Log.w(TAG, "POST_NOTIFICATIONS permission not granted");
-            }
-        } else {
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-            lastNotificationTime.put(cooldownKey, currentTime);
-            vibrateDevice(200);
-            Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
-        }
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "AMIO Alerts";
-            String description = "Notifications for detected lights left on";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
-            }
-        }
-    }
-
-    private void sendNotification(String mote, String label, double value, long timestamp) {
-        Log.d(TAG, "sendNotification() mote=" + mote);
-
-        // Cooldown check
-        Long lastTime = lastNotificationTime.get(mote);
-        long currentTime = System.currentTimeMillis();
-        if (lastTime != null && (currentTime - lastTime) < NOTIFICATION_COOLDOWN_MS) {
-            long remainingCooldown = (NOTIFICATION_COOLDOWN_MS - (currentTime - lastTime)) / 1000;
-            Log.d(TAG, "Notification cooldown active for mote=" + mote + " - wait " + remainingCooldown + " seconds");
-            return;
-        }
-
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        String title = "Lumière détectée: " + mote;
-        String text = String.format(java.util.Locale.getDefault(),
-            "Capteur %s (%s) détecte une lumière (val=%.2f)", mote, label, value);
-
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(text)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .setSound(alarmSound)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                notificationManager.notify(NOTIFICATION_ID, builder.build());
-                lastNotificationTime.put(mote, currentTime);
-                Log.i(TAG, "Notification posted for mote=" + mote);
-            } else {
-                Log.w(TAG, "POST_NOTIFICATIONS permission not granted");
-            }
-        } else {
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-            lastNotificationTime.put(mote, currentTime);
-            Log.i(TAG, "Notification posted for mote=" + mote);
-        }
-    }
-
-    private void sendEmailIntent(String mote, String label, double value, long timestamp) {
-        Log.d(TAG, "sendEmailIntent() mote=" + mote);
-
-        String emailAddress = prefs.getString("notify_email", "");
-        String subject = "AMIO - Lumière détectée: " + mote;
-        String body = String.format(java.util.Locale.getDefault(),
-            "Capteur %s (%s) détecte une lumière à %d (val=%.2f)", mote, label, timestamp, value);
-
-        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"));
-        if (emailAddress != null && !emailAddress.isEmpty()) {
-            emailIntent = new Intent(Intent.ACTION_SENDTO,
-                Uri.parse("mailto:" + Uri.encode(emailAddress)));
-        }
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
-        emailIntent.putExtra(Intent.EXTRA_TEXT, body);
-        emailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        try {
-            startActivity(Intent.createChooser(emailIntent, "Envoyer un email..."));
-            Log.i(TAG, "Email chooser launched");
-        } catch (Exception e) {
-            Log.e(TAG, "No email client available", e);
-        }
-    }
-
-    private void vibrateDevice(long millis) {
-        try {
-            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            if (v != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(android.os.VibrationEffect.createOneShot(millis,
-                        android.os.VibrationEffect.DEFAULT_AMPLITUDE));
-                } else {
-                    v.vibrate(millis);
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Vibration failed", e);
-        }
-    }
 
     private void broadcastResult(String status, String jsonData) {
         Log.d(TAG, "broadcastResult() called - status: " + status);
