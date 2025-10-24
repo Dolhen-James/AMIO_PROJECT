@@ -1,15 +1,20 @@
 package com.example.amio;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import android.os.Build;
 
 import java.text.SimpleDateFormat;
@@ -24,6 +29,7 @@ import java.util.Locale;
  * - Display service status (running/stopped)
  * - Show last check timestamp
  * - Display sensor data (TP2)
+ * - Request notification permission on Android 13+ (TP2/TP3)
  *
  * TP1: Basic service control and status display
  * TP2: Display sensor count and lights on count
@@ -32,6 +38,7 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 1001;
 
     // UI elements
     private Button btnToggleService;
@@ -52,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "MainActivity created");
 
+        // Request notification permission for Android 13+ (API 33+)
+        requestNotificationPermission();
+
         // Initialize UI elements
         initializeViews();
 
@@ -63,6 +73,44 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up BroadcastReceiver for service updates
         setupBroadcastReceiver();
+    }
+
+    /**
+     * Request POST_NOTIFICATIONS permission for Android 13+ (API 33+)
+     * This is required for the app to display notifications
+     */
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        PERMISSION_REQUEST_POST_NOTIFICATIONS);
+            } else {
+                Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
+            }
+        } else {
+            Log.d(TAG, "Android version < 13, POST_NOTIFICATIONS not required");
+        }
+    }
+
+    /**
+     * Handle the result of permission request
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == PERMISSION_REQUEST_POST_NOTIFICATIONS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "POST_NOTIFICATIONS permission granted");
+                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.w(TAG, "POST_NOTIFICATIONS permission denied");
+                Toast.makeText(this, "Notification permission denied - notifications will not work", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     /**

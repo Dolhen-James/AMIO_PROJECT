@@ -7,9 +7,14 @@ package com.example.amio;
  * - Mote identifier
  * - Last measured light value
  * - Timestamp of the measurement
- * - Computed state (light on/off based on threshold)
+ * - Computed state (light on/off based on delta hysteresis)
  *
- * TP2: Data model for sensor tracking and light detection
+ * TP2: Data model for sensor tracking and light detection with hysteresis
+ *
+ * Detection logic (delta-based hysteresis):
+ * - Delta >= +25: light switches to ON
+ * - Delta <= -25: light switches to OFF
+ * - Delta in (-25, +25): state remains unchanged (prevents flickering)
  */
 public class SensorState {
 
@@ -20,17 +25,24 @@ public class SensorState {
     private boolean lightOn;
 
     /**
-     * Default threshold for light detection (calibration value)
-     * Values above this threshold indicate light is ON
-     * TP2: This value should be calibrated based on actual sensor data
+     * Default threshold for initial light detection (calibration value)
+     * Used only for initial state determination
      */
     public static final double DEFAULT_LIGHT_THRESHOLD = 200.0;
+
+    /**
+     * Hysteresis delta thresholds
+     * Positive delta to switch ON, negative delta to switch OFF
+     */
+    public static final double DELTA_ON = 25.0;
+    public static final double DELTA_OFF = -25.0;
 
     public SensorState(String mote, String label, double lastValue, long timestamp) {
         this.mote = mote;
         this.label = label;
         this.lastValue = lastValue;
         this.timestamp = timestamp;
+        // Initial state based on absolute threshold
         this.lightOn = lastValue > DEFAULT_LIGHT_THRESHOLD;
     }
 
@@ -83,33 +95,56 @@ public class SensorState {
     }
 
     /**
-     * Update sensor state with new reading and detect if light status changed
+     * Update sensor state with new reading using delta-based hysteresis.
+     *
+     * Hysteresis logic (prevents flickering):
+     * - If delta >= +25: switch to ON
+     * - If delta <= -25: switch to OFF
+     * - If delta in (-25, +25): keep current state
      *
      * @param newValue New light sensor value
      * @param newTimestamp Timestamp of new reading
-     * @param threshold Light detection threshold
+     * @param threshold Unused (kept for backward compatibility)
      * @return true if light state changed (off->on or on->off), false otherwise
      */
     public boolean updateState(double newValue, long newTimestamp, double threshold) {
         boolean wasLightOn = this.lightOn;
+
+        // Calculate delta from previous value
+        double delta = newValue - this.lastValue;
+
+        // Apply hysteresis logic
+        if (delta >= DELTA_ON) {
+            // Significant increase -> turn ON
+            this.lightOn = true;
+        } else if (delta <= DELTA_OFF) {
+            // Significant decrease -> turn OFF
+            this.lightOn = false;
+        }
+        // else: delta in (-25, +25) -> state unchanged
+
+        // Update stored values
         this.lastValue = newValue;
         this.timestamp = newTimestamp;
-        this.lightOn = newValue > threshold;
 
         // Return true if state changed
         return wasLightOn != this.lightOn;
     }
 
     /**
-     * Check if this update represents a new light turned ON event
+     * Check if this update represents a new light turned ON event.
+     * Uses delta-based hysteresis detection.
      *
      * @param newValue New light sensor value
-     * @param threshold Light detection threshold
-     * @return true if light was OFF and is now ON
+     * @param threshold Unused (kept for backward compatibility)
+     * @return true if light was OFF and will switch to ON based on delta
      */
     public boolean detectNewLightOn(double newValue, double threshold) {
-        boolean newLightOn = newValue > threshold;
-        return !this.lightOn && newLightOn;
+        // Calculate delta from current value
+        double delta = newValue - this.lastValue;
+
+        // Check if currently OFF and delta triggers ON
+        return !this.lightOn && (delta >= DELTA_ON);
     }
 
     @Override
