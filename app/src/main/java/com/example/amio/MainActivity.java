@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         tvSensorData = findViewById(R.id.tvSensorData);
 
         // Initialize sensor data display
-        tvSensorData.setText("No data yet - waiting for service...");
+    tvSensorData.setText(getString(R.string.sensor_no_data));
         Log.d(TAG, "UI elements initialized - tvSensorData is " + (tvSensorData != null ? "NOT NULL" : "NULL"));
 
     }
@@ -163,13 +163,13 @@ public class MainActivity extends AppCompatActivity {
         isServiceRunning = isServiceRunning(MainService.class);
 
         if (isServiceRunning) {
-            btnToggleService.setText("Stop Service");
-            tvServiceStatus.setText("Running");
-            tvServiceStatus.setTextColor(0xFF00FF00); // Green
+            btnToggleService.setText(getString(R.string.toggle_stop_service));
+            tvServiceStatus.setText(getString(R.string.service_status_running));
+            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_running));
         } else {
-            btnToggleService.setText("Start Service");
-            tvServiceStatus.setText("Stopped");
-            tvServiceStatus.setTextColor(0xFFFF0000); // Red
+            btnToggleService.setText(getString(R.string.toggle_start_service));
+            tvServiceStatus.setText(getString(R.string.service_status_stopped));
+            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_stopped));
         }
 
         Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped"));
@@ -219,9 +219,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Change text color based on lights detected
         if (lightsOnCount > 0) {
-            tvSensorData.setTextColor(0xFFFF9800); // Orange - lights detected
+            tvSensorData.setTextColor(getResources().getColor(R.color.sensor_lights_detected));
         } else {
-            tvSensorData.setTextColor(0xFF4CAF50); // Green - all clear
+            tvSensorData.setTextColor(getResources().getColor(R.color.sensor_all_clear));
         }
 
         Log.d(TAG, "updateSensorData() completed successfully");

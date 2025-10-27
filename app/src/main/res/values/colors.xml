@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="service_running">#FF00FF00</color>
+    <color name="service_stopped">#FFFF0000</color>
+    <color name="sensor_lights_detected">#FFFF9800</color>
+    <color name="sensor_all_clear">#FF4CAF50</color>
 </resources>

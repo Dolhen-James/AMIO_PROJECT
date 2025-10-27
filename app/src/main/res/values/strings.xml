@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">AMIO</string>
+    <string name="service_status_running">Running</string>
+    <string name="service_status_stopped">Stopped</string>
+    <string name="toggle_start_service">Start Service</string>
+    <string name="toggle_stop_service">Stop Service</string>
+    <string name="sensor_no_data">No data yet - waiting for service...</string>
 </resources>
