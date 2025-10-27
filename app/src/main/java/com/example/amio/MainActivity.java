@@ -198,63 +198,17 @@ public class MainActivity extends AppCompatActivity {
      */
     public void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson) {
         Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
-                   ", lightsOnCount=" + lightsOnCount + ", status=" + status);
+                ", lightsOnCount=" + lightsOnCount + ", status=" + status);
 
         StringBuilder sb = new StringBuilder();
+        sb.append(SensorDataHelper.formatSensorSummary(sensorCount, lightsOnCount, status));
 
-        // Summary header
-        sb.append("═══════════════════════════════\n");
-        sb.append("📊 SUMMARY\n");
-        sb.append("═══════════════════════════════\n");
-        sb.append("Total Sensors: ").append(sensorCount).append("\n");
-        sb.append("Lights ON: ").append(lightsOnCount).append("\n");
-        sb.append("Status: ").append(status).append("\n\n");
-
-        // Parse and display individual sensor details
-        if (sensorDataJson != null && !sensorDataJson.isEmpty()) {
-            try {
-                org.json.JSONArray sensorsArray = new org.json.JSONArray(sensorDataJson);
-
-                Log.d(TAG, "Parsed JSON array with " + sensorsArray.length() + " sensors");
-
-                sb.append("═══════════════════════════════\n");
-                sb.append("🔍 SENSOR DETAILS\n");
-                sb.append("═══════════════════════════════\n\n");
-
-                for (int i = 0; i < sensorsArray.length(); i++) {
-                    org.json.JSONObject sensor = sensorsArray.getJSONObject(i);
-
-                    String mote = sensor.optString("mote", "unknown");
-                    String label = sensor.optString("label", "unknown");
-                    double value = sensor.optDouble("value", 0.0);
-                    long timestamp = sensor.optLong("timestamp", 0);
-                    boolean lightOn = sensor.optBoolean("lightOn", false);
-
-                    Log.d(TAG, "Sensor " + i + ": mote=" + mote + ", value=" + value + ", lightOn=" + lightOn);
-
-                    // Format timestamp
-                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-                    String timeStr = sdf.format(new Date(timestamp));
-
-                    // Format sensor entry with status indicator
-                    String indicator = lightOn ? "💡 ON " : "🌙 OFF";
-                    sb.append(indicator).append(" │ ").append(mote).append("\n");
-                    sb.append("├─ Label: ").append(label).append("\n");
-                    sb.append("├─ Value: ").append(String.format(Locale.getDefault(), "%.2f", value)).append("\n");
-                    sb.append("└─ Time: ").append(timeStr).append("\n");
-
-                    if (i < sensorsArray.length() - 1) {
-                        sb.append("\n");
-                    }
-                }
-
-            } catch (org.json.JSONException e) {
-                Log.e(TAG, "Error parsing sensor details JSON", e);
-                sb.append("\n⚠️ Error parsing sensor details\n");
-            }
-        } else {
-            Log.w(TAG, "sensorDataJson is null or empty");
-            sb.append("No sensor details available yet...\n");
+        try {
+            java.util.List<SensorDataHelper.SensorInfo> sensors = SensorDataHelper.parseSensorData(sensorDataJson);
+            sb.append(SensorDataHelper.formatSensorDetails(sensors));
+        } catch (org.json.JSONException e) {
+            Log.e(TAG, "Error parsing sensor details JSON", e);
+            sb.append("\n⚠️ Error parsing sensor details\n");
         }
 
         String finalText = sb.toString();
