@@ -120,41 +120,7 @@ public class MainActivity extends AppCompatActivity {
      * Set up BroadcastReceiver to listen for updates from MainService (TP3)
      */
     private void setupBroadcastReceiver() {
-        serviceReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "BroadcastReceiver.onReceive() called");
-
-                if (MainService.ACTION_RESULT.equals(intent.getAction())) {
-                    Log.d(TAG, "Correct action received: " + MainService.ACTION_RESULT);
-
-                    // Extract data from broadcast
-                    String status = intent.getStringExtra(MainService.EXTRA_STATUS);
-                    long timestamp = intent.getLongExtra(MainService.EXTRA_TIMESTAMP, 0);
-                    int sensorCount = intent.getIntExtra(MainService.EXTRA_SENSOR_COUNT, 0);
-                    int lightsOnCount = intent.getIntExtra(MainService.EXTRA_LIGHTS_ON_COUNT, 0);
-
-                    // Extract detailed sensor data (JSON format)
-                    String sensorDataJson = intent.getStringExtra(MainService.EXTRA_SENSOR_DETAILS);
-
-                    Log.d(TAG, "Received broadcast - status: " + status +
-                            ", sensors: " + sensorCount +
-                            ", lights_on: " + lightsOnCount);
-                    Log.d(TAG, "Sensor JSON length: " + (sensorDataJson != null ? sensorDataJson.length() : "null"));
-                    if (sensorDataJson != null && sensorDataJson.length() < 500) {
-                        Log.d(TAG, "Sensor JSON: " + sensorDataJson);
-                    }
-
-                    // Update UI on main thread
-                    updateLastCheck(timestamp);
-                    updateSensorData(sensorCount, lightsOnCount, status, sensorDataJson);
-
-                    Log.d(TAG, "UI update completed");
-                } else {
-                    Log.w(TAG, "Received broadcast with unexpected action: " + intent.getAction());
-                }
-            }
-        };
+        serviceReceiver = new ServiceBroadcastReceiver(this);
 
         // Register receiver with IntentFilter
         IntentFilter filter = new IntentFilter(MainService.ACTION_RESULT);
@@ -214,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param timestamp Unix timestamp in milliseconds
      */
-    private void updateLastCheck(long timestamp) {
+    public void updateLastCheck(long timestamp) {
         if (timestamp > 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
             String time = sdf.format(new Date(timestamp));
@@ -230,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
      * @param status Status message from service
      * @param sensorDataJson JSON string containing detailed sensor information
      */
-    private void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson) {
+    public void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson) {
         Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
                    ", lightsOnCount=" + lightsOnCount + ", status=" + status);
 
