@@ -153,6 +153,10 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         Intent intent = new Intent(this, MainService.class);
         startService(intent);
         updateServiceStatus();
+
+            // Update SharedPreferences so SettingsActivity reflects the change
+            SettingsManager settingsManager = new SettingsManager(this);
+            settingsManager.setBoolean("pref_service_enabled", true);
     }
 
     /**
@@ -163,6 +167,10 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         Intent intent = new Intent(this, MainService.class);
         stopService(intent);
         updateServiceStatus();
+
+            // Update SharedPreferences so SettingsActivity reflects the change
+            SettingsManager settingsManager = new SettingsManager(this);
+            settingsManager.setBoolean("pref_service_enabled", false);
     }
 
     /**

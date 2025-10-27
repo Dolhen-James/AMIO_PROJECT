@@ -1,4 +1,8 @@
+
 package com.example.amio;
+
+import android.content.Intent;
+import com.example.amio.MainService;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
@@ -18,6 +22,29 @@ public class SettingsActivity extends PreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
+
+        // Get reference to the "Enable Service" CheckBoxPreference
+        android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
+        SettingsManager settingsManager = new SettingsManager(this);
+
+        // Sync checkbox state with SharedPreferences
+        boolean enabled = settingsManager.getBoolean("pref_service_enabled", true);
+        servicePref.setChecked(enabled);
+
+        // Listen for changes
+        servicePref.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean isChecked = (Boolean) newValue;
+            settingsManager.setBoolean("pref_service_enabled", isChecked);
+
+            // Start or stop the service accordingly
+            Intent serviceIntent = new Intent(this, MainService.class);
+            if (isChecked) {
+                startService(serviceIntent);
+            } else {
+                stopService(serviceIntent);
+            }
+            return true;
+        });
     }
 
     @Override
@@ -54,4 +81,14 @@ public class SettingsActivity extends PreferenceActivity {
         }
         return result;
     }
+
+        @Override
+        protected void onResume() {
+            super.onResume();
+            // Sync checkbox state if changed from MainActivity
+            android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
+            SettingsManager settingsManager = new SettingsManager(this);
+            boolean enabled = settingsManager.getBoolean("pref_service_enabled", true);
+            servicePref.setChecked(enabled);
+        }
 }
