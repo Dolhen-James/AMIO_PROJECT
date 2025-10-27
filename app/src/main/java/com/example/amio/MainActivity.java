@@ -60,8 +60,13 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "MainActivity created");
 
-    // Request notification permission for Android 13+ (API 33+) using helper
-    NotificationHelper.requestNotificationPermission(this);
+
+        // Set up the top app bar (Toolbar)
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        // Request notification permission for Android 13+ (API 33+) using helper
+        NotificationHelper.requestNotificationPermission(this);
 
         // Initialize UI elements
         initializeViews();
