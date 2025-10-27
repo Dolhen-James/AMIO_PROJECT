@@ -37,7 +37,14 @@ import java.util.Locale;
  * TP2: Display sensor count and lights on count
  * TP3: BroadcastReceiver for service communication
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ServiceBroadcastCallback {
+    // ...existing code...
+    // Implement ServiceBroadcastCallback to decouple receiver from activity
+    // @Override
+    public void onServiceBroadcast(String status, long timestamp, int sensorCount, int lightsOnCount, String sensorDataJson) {
+        updateLastCheck(timestamp);
+        updateSensorData(sensorCount, lightsOnCount, status, sensorDataJson);
+    }
 
     private static final String TAG = "MainActivity";
 
@@ -120,7 +127,9 @@ public class MainActivity extends AppCompatActivity {
      * Set up BroadcastReceiver to listen for updates from MainService (TP3)
      */
     private void setupBroadcastReceiver() {
-        serviceReceiver = new ServiceBroadcastReceiver(this);
+    serviceReceiver = new ServiceBroadcastReceiver(this);
+    // Use callback interface for decoupling
+    serviceReceiver = new ServiceBroadcastReceiver(this);
 
         // Register receiver with IntentFilter
         IntentFilter filter = new IntentFilter(MainService.ACTION_RESULT);
