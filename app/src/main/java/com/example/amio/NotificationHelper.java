@@ -1,5 +1,6 @@
 package com.example.amio;
 
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,6 +16,8 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +37,8 @@ public class NotificationHelper {
 
     private static final String TAG = "NotificationHelper";
 
+    public static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 1001;
+
     // Notification configuration
     private static final String CHANNEL_ID = "amio_alerts_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -45,6 +50,40 @@ public class NotificationHelper {
         this.context = context;
         this.prefs = context.getSharedPreferences("amio_prefs", Context.MODE_PRIVATE);
         createNotificationChannel();
+    }
+
+    /**
+     * Request POST_NOTIFICATIONS permission for Android 13+ (API 33+)
+     */
+    public static void requestNotificationPermission(Activity activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
+                ActivityCompat.requestPermissions(activity,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                        PERMISSION_REQUEST_POST_NOTIFICATIONS);
+            } else {
+                Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
+            }
+        } else {
+            Log.d(TAG, "Android version < 13, POST_NOTIFICATIONS not required");
+        }
+    }
+
+    /**
+     * Handle the result of permission request
+     */
+    public static void handlePermissionResult(Activity activity, int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_POST_NOTIFICATIONS) {
+            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "POST_NOTIFICATIONS permission granted");
+                android.widget.Toast.makeText(activity, "Notification permission granted", android.widget.Toast.LENGTH_SHORT).show();
+            } else {
+                Log.w(TAG, "POST_NOTIFICATIONS permission denied");
+                android.widget.Toast.makeText(activity, "Notification permission denied - notifications will not work", android.widget.Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     /**

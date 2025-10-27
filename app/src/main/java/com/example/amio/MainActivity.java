@@ -40,7 +40,6 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 1001;
 
     // UI elements
     private Button btnToggleService;
@@ -55,14 +54,14 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver serviceReceiver;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) { // Setup
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         Log.d(TAG, "MainActivity created");
 
-        // Request notification permission for Android 13+ (API 33+)
-        requestNotificationPermission();
+    // Request notification permission for Android 13+ (API 33+) using helper
+    NotificationHelper.requestNotificationPermission(this);
 
         // Initialize UI elements
         initializeViews();
@@ -77,42 +76,11 @@ public class MainActivity extends AppCompatActivity {
         setupBroadcastReceiver();
     }
 
-    /**
-     * Request POST_NOTIFICATIONS permission for Android 13+ (API 33+)
-     * This is required for the app to display notifications
-     */
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        PERMISSION_REQUEST_POST_NOTIFICATIONS);
-            } else {
-                Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
-            }
-        } else {
-            Log.d(TAG, "Android version < 13, POST_NOTIFICATIONS not required");
-        }
-    }
 
-    /**
-     * Handle the result of permission request
-     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PERMISSION_REQUEST_POST_NOTIFICATIONS) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "POST_NOTIFICATIONS permission granted");
-                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Log.w(TAG, "POST_NOTIFICATIONS permission denied");
-                Toast.makeText(this, "Notification permission denied - notifications will not work", Toast.LENGTH_LONG).show();
-            }
-        }
+        NotificationHelper.handlePermissionResult(this, requestCode, permissions, grantResults);
     }
 
     /**
