@@ -45,6 +45,18 @@ public class SettingsActivity extends PreferenceActivity {
             }
             return true;
         });
+
+            // Get reference to the "Enable Notifications" CheckBoxPreference
+            android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
+            boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled", true);
+            notifPref.setChecked(notifEnabled);
+
+            notifPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                boolean isChecked = (Boolean) newValue;
+                settingsManager.setBoolean("pref_notifications_enabled", isChecked);
+                // No need to do more, NotificationHelper will read this value
+                return true;
+            });
     }
 
     @Override
@@ -90,5 +102,10 @@ public class SettingsActivity extends PreferenceActivity {
             SettingsManager settingsManager = new SettingsManager(this);
             boolean enabled = settingsManager.getBoolean("pref_service_enabled", true);
             servicePref.setChecked(enabled);
+
+                // Sync notification checkbox state
+                android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
+                boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled", true);
+                notifPref.setChecked(notifEnabled);
         }
 }

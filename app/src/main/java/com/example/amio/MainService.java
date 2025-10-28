@@ -72,7 +72,7 @@ public class MainService extends Service {
         Log.d(TAG, "Service created");
 
         // Initialize SharedPreferences using Context directly
-        prefs = getSharedPreferences("amio_prefs", MODE_PRIVATE);
+    prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
 
         // Read threshold from preferences (with default)
         try {

@@ -48,7 +48,7 @@ public class NotificationHelper {
 
     public NotificationHelper(Context context) {
         this.context = context;
-        this.prefs = context.getSharedPreferences("amio_prefs", Context.MODE_PRIVATE);
+    this.prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
         createNotificationChannel();
     }
 
