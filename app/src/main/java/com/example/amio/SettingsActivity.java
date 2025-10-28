@@ -57,6 +57,17 @@ public class SettingsActivity extends PreferenceActivity {
                 // No need to do more, NotificationHelper will read this value
                 return true;
             });
+
+            // Get reference to the "Vibrate" CheckBoxPreference
+            android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate");
+            boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate", true);
+            vibratePref.setChecked(vibrateEnabled);
+
+            vibratePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                boolean isChecked = (Boolean) newValue;
+                settingsManager.setBoolean("pref_vibrate", isChecked);
+                return true;
+            });
     }
 
     @Override
@@ -107,5 +118,10 @@ public class SettingsActivity extends PreferenceActivity {
                 android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
                 boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled", true);
                 notifPref.setChecked(notifEnabled);
+
+                // Sync vibrate checkbox state
+                android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate");
+                boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate", true);
+                vibratePref.setChecked(vibrateEnabled);
         }
 }

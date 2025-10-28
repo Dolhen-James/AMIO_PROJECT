@@ -155,18 +155,19 @@ public class NotificationHelper {
         // Send notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
+        boolean vibrateEnabled = prefs.getBoolean("pref_vibrate", true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 notificationManager.notify(NOTIFICATION_ID, builder.build());
-                vibrateDevice(200);
+                if (vibrateEnabled) vibrateDevice(400);
                 Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission not granted");
             }
         } else {
             notificationManager.notify(NOTIFICATION_ID, builder.build());
-            vibrateDevice(200);
+            if (vibrateEnabled) vibrateDevice(200);
             Log.i(TAG, "Grouped notification posted (ON:" + motesOn.size() + ", OFF:" + motesOff.size() + ")");
         }
     }
