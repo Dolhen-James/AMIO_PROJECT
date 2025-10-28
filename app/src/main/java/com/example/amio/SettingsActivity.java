@@ -45,6 +45,17 @@ public class SettingsActivity extends PreferenceActivity {
             }
             return true;
         });
+            // Polling Interval EditTextPreference: show current value as summary
+            android.preference.EditTextPreference pollingPref = (android.preference.EditTextPreference) findPreference("pref_polling_interval");
+            String pollingValue = settingsManager.getString("pref_polling_interval", "10");
+            pollingPref.setSummary("Current: " + pollingValue + " seconds");
+
+            pollingPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                String newPollingValue = (String) newValue;
+                settingsManager.setString("pref_polling_interval", newPollingValue);
+                pollingPref.setSummary("Current: " + newPollingValue + " seconds");
+                return true;
+            });
 
             // Get reference to the "Enable Notifications" CheckBoxPreference
             android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
@@ -123,5 +134,9 @@ public class SettingsActivity extends PreferenceActivity {
                 android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate");
                 boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate", true);
                 vibratePref.setChecked(vibrateEnabled);
+                // Sync polling interval summary
+                android.preference.EditTextPreference pollingPref = (android.preference.EditTextPreference) findPreference("pref_polling_interval");
+                String pollingValue = settingsManager.getString("pref_polling_interval", "10");
+                pollingPref.setSummary("Current: " + pollingValue + " seconds");
         }
 }

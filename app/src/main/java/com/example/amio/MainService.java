@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * TP2: HTTP fetching and JSON parsing
  * TP3: Communication with MainActivity via broadcasts
  */
-public class MainService extends Service {
+public class MainService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = "MainService";
 
@@ -54,8 +54,8 @@ public class MainService extends Service {
     // SharedPreferences for reading user settings
     private SharedPreferences prefs;
 
-    // Fetch interval in milliseconds
-    private static final long FETCH_INTERVAL_MS = 5_000;
+    // Fetch interval in milliseconds (dynamic)
+    private long fetchIntervalMs = 5000;
 
     // Sensor state tracking - thread-safe map
     private final ConcurrentHashMap<String, SensorState> sensorStates = new ConcurrentHashMap<>();
@@ -74,6 +74,12 @@ public class MainService extends Service {
         // Initialize SharedPreferences using Context directly
     prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
 
+            // Listen for polling interval changes
+            prefs.registerOnSharedPreferenceChangeListener(this);
+
+            // Get initial polling interval
+            fetchIntervalMs = getPollingIntervalMs();
+
         // Read threshold from preferences (with default)
         try {
             lightThreshold = Double.parseDouble(
@@ -88,12 +94,12 @@ public class MainService extends Service {
         notificationHelper = new NotificationHelper(this);
 
         // Start periodic data fetching
-        startPeriodicFetch();
+    startPeriodicFetch();
     }
 
     private void startPeriodicFetch() {
-        Log.d(TAG, "Starting periodic fetch task");
-
+        Log.d(TAG, "Starting periodic fetch task with interval: " + fetchIntervalMs + " ms");
+        stopPeriodicFetch();
         timer = new Timer();
         task = new TimerTask() {
             @Override
@@ -101,8 +107,36 @@ public class MainService extends Service {
                 fetchDataFromServer();
             }
         };
+        timer.scheduleAtFixedRate(task, 0, fetchIntervalMs);
+    }
 
-        timer.scheduleAtFixedRate(task, 0, FETCH_INTERVAL_MS);
+    private void stopPeriodicFetch() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
+    }
+
+    private long getPollingIntervalMs() {
+        String intervalStr = prefs.getString("pref_polling_interval", "10");
+        try {
+            long seconds = Long.parseLong(intervalStr);
+            return Math.max(1, seconds) * 1000;
+        } catch (Exception e) {
+            return 10000;
+        }
+    }
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if ("pref_polling_interval".equals(key)) {
+            fetchIntervalMs = getPollingIntervalMs();
+            startPeriodicFetch();
+            Log.d(TAG, "Polling interval changed, timer restarted: " + fetchIntervalMs + " ms");
+        }
     }
 
     private void fetchDataFromServer() {
@@ -295,15 +329,8 @@ public class MainService extends Service {
         super.onDestroy();
         Log.d(TAG, "Service destroyed");
 
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-
-        if (task != null) {
-            task.cancel();
-            task = null;
-        }
+            stopPeriodicFetch();
+            prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Override
