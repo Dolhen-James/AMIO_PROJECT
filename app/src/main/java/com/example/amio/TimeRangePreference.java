@@ -8,7 +8,7 @@ import android.view.View;
 import android.widget.TimePicker;
 
 public class TimeRangePreference extends DialogPreference {
-    private int startHour = 8, startMinute = 0, endHour = 20, endMinute = 0;
+    private int startHour = 18, startMinute = 0, endHour = 23, endMinute = 0;
     private TimePicker startPicker, endPicker;
 
     public TimeRangePreference(Context context, AttributeSet attrs) {
@@ -16,6 +16,8 @@ public class TimeRangePreference extends DialogPreference {
         setDialogLayoutResource(R.layout.pref_time_range_dialog);
         setPositiveButtonText("OK");
         setNegativeButtonText("Cancel");
+        // Set initial summary to default value
+        setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
     }
 
     @Override
@@ -49,7 +51,15 @@ public class TimeRangePreference extends DialogPreference {
     @Override
     protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
         android.content.SharedPreferences sharedPreferences = getContext().getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
-        String value = restorePersistedValue ? sharedPreferences.getString("pref_notification_time_range_notif", "08:00-20:00") : (String) defaultValue;
+        String value;
+        if (restorePersistedValue) {
+            value = sharedPreferences.getString(getKey(), null);
+            if (value == null) {
+                value = defaultValue != null ? defaultValue.toString() : "18:00-23:00";
+            }
+        } else {
+            value = defaultValue != null ? defaultValue.toString() : "18:00-23:00";
+        }
         if (value != null && value.matches("\\d{2}:\\d{2}-\\d{2}:\\d{2}")) {
             String[] parts = value.split("[-:]");
             startHour = Integer.parseInt(parts[0]);

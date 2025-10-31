@@ -20,6 +20,27 @@ public class SettingsActivity extends PreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Force-load default notification settings and service enabled on first launch
+        android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+        // Ensure notification time range summary shows default on first launch
+        com.example.amio.TimeRangePreference timeRangePrefInit = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range_notif");
+        if (timeRangePrefInit != null) {
+            String storedTimeRange = prefs.getString("pref_notification_time_range_notif", null);
+            if (storedTimeRange == null) {
+                timeRangePrefInit.setSummary("From 18:00 to 23:00");
+            }
+        }
+        if (!prefs.contains("pref_service_enabled")) {
+            prefs.edit().putBoolean("pref_service_enabled", false).apply();
+        }
+        if (!prefs.contains("pref_notification_days_notif")) {
+            java.util.HashSet<String> defaultDays = new java.util.HashSet<>();
+            defaultDays.add("Mon"); defaultDays.add("Tue"); defaultDays.add("Wed"); defaultDays.add("Thu"); defaultDays.add("Fri");
+            prefs.edit().putStringSet("pref_notification_days_notif", defaultDays).apply();
+        }
+        if (!prefs.contains("pref_notification_time_range_notif")) {
+            prefs.edit().putString("pref_notification_time_range_notif", "18:00-23:00").apply();
+        }
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
 
@@ -103,7 +124,6 @@ public class SettingsActivity extends PreferenceActivity {
                         }
                     }
                     // Save cleaned set to SharedPreferences
-                    android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
                     android.content.SharedPreferences.Editor editor = prefs.edit();
                     editor.putStringSet("pref_notification_days_notif", cleanedDays);
                     editor.apply();
@@ -129,7 +149,6 @@ public class SettingsActivity extends PreferenceActivity {
                         android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
                     }
                     // Log actual stored value for verification
-                    android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
                     String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
                     android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
                     return true;

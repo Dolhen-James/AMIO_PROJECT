@@ -9,13 +9,13 @@
             android:key="pref_service_enabled"
             android:title="Enable Service"
             android:summary="Enable or disable the background service"
-            android:defaultValue="true" />
+            android:defaultValue="false" />
 
         <CheckBoxPreference
             android:key="pref_boot_start"
             android:title="Start on Boot"
             android:summary="Automatically start service when device boots"
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:dependency="pref_service_enabled" />
 
     </PreferenceCategory>
@@ -43,13 +43,15 @@
             android:summary="Select days to receive notifications"
             android:entries="@array/days_of_week"
             android:entryValues="@array/days_of_week_values"
-            android:defaultValue="@array/days_of_week_default" />
+            android:defaultValue="@array/days_of_week_default" 
+            />
 
         <com.example.amio.TimeRangePreference
             android:key="pref_notification_time_range_notif"
             android:title="Notification Time Range"
             android:summary="Select start and end time for notifications"
-            android:defaultValue="08:00-20:00" />
+            android:defaultValue="18:00-23:00" 
+            />
 
     </PreferenceCategory>
 
