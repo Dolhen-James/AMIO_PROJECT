@@ -79,6 +79,44 @@ public class SettingsActivity extends PreferenceActivity {
                 settingsManager.setBoolean("pref_vibrate", isChecked);
                 return true;
             });
+            // Log changes to notification days and clean up stored values
+            android.preference.MultiSelectListPreference daysPref = (android.preference.MultiSelectListPreference) findPreference("pref_notification_days");
+            daysPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                java.util.Set<String> selectedDays = (java.util.Set<String>) newValue;
+                CharSequence[] entryValuesCs = daysPref.getEntryValues();
+                CharSequence[] entries = daysPref.getEntries();
+                String[] validDayValues = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+                java.util.Set<String> cleanedDays = new java.util.HashSet<>();
+                StringBuilder displayNames = new StringBuilder();
+                for (String value : selectedDays) {
+                    for (int i = 0; i < entryValuesCs.length; i++) {
+                        if (entryValuesCs[i].toString().equals(value)) {
+                            displayNames.append(entries[i]).append(" (").append(value).append(") ");
+                        }
+                    }
+                    // Only add valid entry values
+                    for (String valid : validDayValues) {
+                        if (value.equals(valid)) {
+                            cleanedDays.add(valid);
+                        }
+                    }
+                }
+                // Save cleaned set to SharedPreferences
+                android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+                android.content.SharedPreferences.Editor editor = prefs.edit();
+                editor.putStringSet("pref_notification_days", cleanedDays);
+                editor.apply();
+                android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
+                return true;
+            });
+
+            // Log changes to notification time range
+            com.example.amio.TimeRangePreference timeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range");
+            timeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                String newTimeRange = (String) newValue;
+                android.util.Log.d("SettingsActivity", "Notification time range changed: " + newTimeRange);
+                return true;
+            });
     }
 
     @Override

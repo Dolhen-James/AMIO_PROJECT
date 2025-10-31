@@ -123,6 +123,67 @@ public class NotificationHelper {
             return;
         }
 
+        // Check if today is in allowed notification days
+        java.util.Set<String> allowedDays = prefs.getStringSet("pref_notification_days", null);
+        if (allowedDays == null || allowedDays.isEmpty()) {
+            Log.d(TAG, "No notification days set - skipping notification");
+            return;
+        }
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        int dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK); // 1=Sunday, 2=Monday, ...
+        String today = null;
+        switch (dayOfWeek) {
+            case java.util.Calendar.MONDAY: today = "Mon"; break;
+            case java.util.Calendar.TUESDAY: today = "Tue"; break;
+            case java.util.Calendar.WEDNESDAY: today = "Wed"; break;
+            case java.util.Calendar.THURSDAY: today = "Thu"; break;
+            case java.util.Calendar.FRIDAY: today = "Fri"; break;
+            case java.util.Calendar.SATURDAY: today = "Sat"; break;
+            case java.util.Calendar.SUNDAY: today = "Sun"; break;
+        }
+        if (today == null || !allowedDays.contains(today)) {
+            Log.d(TAG, "Today (" + today + ") not in allowed notification days - skipping notification");
+            return;
+        }
+
+        // Check if current time is within allowed notification time range
+        String timeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
+        String[] parts = timeRange.split("-");
+        if (parts.length != 2) {
+            Log.d(TAG, "Invalid time range format - skipping notification");
+            return;
+        }
+        String startTimeStr = parts[0];
+        String endTimeStr = parts[1];
+        int startHour = 8, startMinute = 0, endHour = 20, endMinute = 0;
+        try {
+            String[] startParts = startTimeStr.split(":");
+            String[] endParts = endTimeStr.split(":");
+            startHour = Integer.parseInt(startParts[0]);
+            startMinute = Integer.parseInt(startParts[1]);
+            endHour = Integer.parseInt(endParts[0]);
+            endMinute = Integer.parseInt(endParts[1]);
+        } catch (Exception e) {
+            Log.d(TAG, "Error parsing time range - skipping notification");
+            return;
+        }
+        int nowHour = calendar.get(java.util.Calendar.HOUR_OF_DAY);
+        int nowMinute = calendar.get(java.util.Calendar.MINUTE);
+        boolean inRange = false;
+        int now = nowHour * 60 + nowMinute;
+        int start = startHour * 60 + startMinute;
+        int end = endHour * 60 + endMinute;
+        if (start <= end) {
+            inRange = (now >= start && now <= end);
+        } else {
+            // Overnight range (e.g., 22:00-06:00)
+            inRange = (now >= start || now <= end);
+        }
+        if (!inRange) {
+            Log.d(TAG, "Current time not in allowed notification range (" + timeRange + ") - skipping notification");
+            return;
+        }
+
         // Build notification content
         String title = buildNotificationTitle(motesOn, motesOff);
         String text = buildNotificationText(motesOn, motesOff);
