@@ -37,6 +37,20 @@
             android:defaultValue="true"
             android:dependency="pref_notifications_enabled" />
 
+        <MultiSelectListPreference
+            android:key="pref_notification_days"
+            android:title="Notification Days"
+            android:summary="Select days to receive notifications"
+            android:entries="@array/days_of_week"
+            android:entryValues="@array/days_of_week_values"
+            android:defaultValue="@array/days_of_week_default" />
+
+        <com.example.amio.TimeRangePreference
+            android:key="pref_notification_time_range"
+            android:title="Notification Time Range"
+            android:summary="Select start and end time for notifications"
+            android:defaultValue="08:00-20:00" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

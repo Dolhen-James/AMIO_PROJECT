@@ -19,10 +19,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-
-
-// import com.example.amio.SensorFetchManager;
 
 /**
  * MainService - Background service that periodically fetches sensor data from IoTLab API
@@ -48,8 +47,9 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     public static final String EXTRA_LIGHTS_ON_COUNT = "lights_on_count";
     public static final String EXTRA_SENSOR_DETAILS = "sensor_details";
 
-    // SensorFetchManager for periodic API fetching
-    private SensorFetchManager sensorFetchManager;
+    // Timer for periodic task execution
+    private Timer timer;
+    private TimerTask task;
 
     // SharedPreferences for reading user settings
     private SharedPreferences prefs;
@@ -73,10 +73,12 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         // Initialize SharedPreferences using Context directly
     prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
-    // Listen for polling interval changes
-    prefs.registerOnSharedPreferenceChangeListener(this);
-    // Get initial polling interval
-    fetchIntervalMs = getPollingIntervalMs();
+
+            // Listen for polling interval changes
+            prefs.registerOnSharedPreferenceChangeListener(this);
+
+            // Get initial polling interval
+            fetchIntervalMs = getPollingIntervalMs();
 
         // Read threshold from preferences (with default)
         try {
@@ -91,17 +93,32 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         // Initialize notification helper
         notificationHelper = new NotificationHelper(this);
 
-        // Start periodic data fetching using SensorFetchManager
-        sensorFetchManager = new SensorFetchManager(this, prefs, lightThreshold, notificationHelper, this::onSensorDataFetched);
-        sensorFetchManager.start(fetchIntervalMs);
+        // Start periodic data fetching
+    startPeriodicFetch();
     }
 
+    private void startPeriodicFetch() {
+        Log.d(TAG, "Starting periodic fetch task with interval: " + fetchIntervalMs + " ms");
+        stopPeriodicFetch();
+        timer = new Timer();
+        task = new TimerTask() {
+            @Override
+            public void run() {
+                fetchDataFromServer();
+            }
+        };
+        timer.scheduleAtFixedRate(task, 0, fetchIntervalMs);
+    }
 
-
-    // Callback for SensorFetchManager
-    private void onSensorDataFetched(String jsonResponse, String status) {
-        parseJsonAndUpdateStates(jsonResponse);
-        broadcastResult(status, jsonResponse);
+    private void stopPeriodicFetch() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
     }
 
     private long getPollingIntervalMs() {
@@ -117,11 +134,8 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if ("pref_polling_interval".equals(key)) {
             fetchIntervalMs = getPollingIntervalMs();
-            if (sensorFetchManager != null) {
-                sensorFetchManager.stop();
-                sensorFetchManager.start(fetchIntervalMs);
-                Log.d(TAG, "Polling interval changed, timer restarted: " + fetchIntervalMs + " ms");
-            }
+            startPeriodicFetch();
+            Log.d(TAG, "Polling interval changed, timer restarted: " + fetchIntervalMs + " ms");
         }
     }
 
@@ -314,11 +328,9 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Service destroyed");
-        if (sensorFetchManager != null) {
-            sensorFetchManager.stop();
-            sensorFetchManager = null;
-        }
-        prefs.unregisterOnSharedPreferenceChangeListener(this);
+
+            stopPeriodicFetch();
+            prefs.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Override
