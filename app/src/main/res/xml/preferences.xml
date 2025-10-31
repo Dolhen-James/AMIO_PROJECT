@@ -22,23 +22,23 @@
 
     <PreferenceCategory
         android:title="Notification Settings"
-        android:key="pref_notifications">
+        android:key="pref_notifications_notif">
 
         <CheckBoxPreference
-            android:key="pref_notifications_enabled"
+            android:key="pref_notifications_enabled_notif"
             android:title="Enable Notifications"
             android:summary="Show notifications for sensor alerts"
             android:defaultValue="true" />
 
         <CheckBoxPreference
-            android:key="pref_vibrate"
+            android:key="pref_vibrate_notif"
             android:title="Vibrate"
             android:summary="Vibrate on notifications"
             android:defaultValue="true"
-            android:dependency="pref_notifications_enabled" />
+            android:dependency="pref_notifications_enabled_notif" />
 
         <MultiSelectListPreference
-            android:key="pref_notification_days"
+            android:key="pref_notification_days_notif"
             android:title="Notification Days"
             android:summary="Select days to receive notifications"
             android:entries="@array/days_of_week"
@@ -46,7 +46,7 @@
             android:defaultValue="@array/days_of_week_default" />
 
         <com.example.amio.TimeRangePreference
-            android:key="pref_notification_time_range"
+            android:key="pref_notification_time_range_notif"
             android:title="Notification Time Range"
             android:summary="Select start and end time for notifications"
             android:defaultValue="08:00-20:00" />

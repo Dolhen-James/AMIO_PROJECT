@@ -58,79 +58,83 @@ public class SettingsActivity extends PreferenceActivity {
             });
 
             // Get reference to the "Enable Notifications" CheckBoxPreference
-            android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
-            boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled", true);
+            android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled_notif");
+            boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled_notif", true);
             notifPref.setChecked(notifEnabled);
 
             notifPref.setOnPreferenceChangeListener((preference, newValue) -> {
                 boolean isChecked = (Boolean) newValue;
-                settingsManager.setBoolean("pref_notifications_enabled", isChecked);
+                settingsManager.setBoolean("pref_notifications_enabled_notif", isChecked);
                 // No need to do more, NotificationHelper will read this value
                 return true;
             });
 
             // Get reference to the "Vibrate" CheckBoxPreference
-            android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate");
-            boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate", true);
+            android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate_notif");
+            boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate_notif", true);
             vibratePref.setChecked(vibrateEnabled);
 
             vibratePref.setOnPreferenceChangeListener((preference, newValue) -> {
                 boolean isChecked = (Boolean) newValue;
-                settingsManager.setBoolean("pref_vibrate", isChecked);
+                settingsManager.setBoolean("pref_vibrate_notif", isChecked);
                 return true;
             });
             // Log changes to notification days and clean up stored values
-            android.preference.MultiSelectListPreference daysPref = (android.preference.MultiSelectListPreference) findPreference("pref_notification_days");
-            daysPref.setOnPreferenceChangeListener((preference, newValue) -> {
-                java.util.Set<String> selectedDays = (java.util.Set<String>) newValue;
-                CharSequence[] entryValuesCs = daysPref.getEntryValues();
-                CharSequence[] entries = daysPref.getEntries();
-                String[] validDayValues = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-                java.util.Set<String> cleanedDays = new java.util.HashSet<>();
-                StringBuilder displayNames = new StringBuilder();
-                for (String value : selectedDays) {
-                    for (int i = 0; i < entryValuesCs.length; i++) {
-                        if (entryValuesCs[i].toString().equals(value)) {
-                            displayNames.append(entries[i]).append(" (").append(value).append(") ");
+            android.preference.MultiSelectListPreference daysPref = (android.preference.MultiSelectListPreference) findPreference("pref_notification_days_notif");
+            if (daysPref != null) {
+                daysPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    java.util.Set<String> selectedDays = (java.util.Set<String>) newValue;
+                    CharSequence[] entryValuesCs = daysPref.getEntryValues();
+                    CharSequence[] entries = daysPref.getEntries();
+                    String[] validDayValues = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+                    java.util.Set<String> cleanedDays = new java.util.HashSet<>();
+                    StringBuilder displayNames = new StringBuilder();
+                    for (String value : selectedDays) {
+                        for (int i = 0; i < entryValuesCs.length; i++) {
+                            if (entryValuesCs[i].toString().equals(value)) {
+                                displayNames.append(entries[i]).append(" (").append(value).append(") ");
+                            }
+                        }
+                        // Only add valid entry values
+                        for (String valid : validDayValues) {
+                            if (value.equals(valid)) {
+                                cleanedDays.add(valid);
+                            }
                         }
                     }
-                    // Only add valid entry values
-                    for (String valid : validDayValues) {
-                        if (value.equals(valid)) {
-                            cleanedDays.add(valid);
-                        }
-                    }
-                }
-                // Save cleaned set to SharedPreferences
-                android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
-                android.content.SharedPreferences.Editor editor = prefs.edit();
-                editor.putStringSet("pref_notification_days", cleanedDays);
-                editor.apply();
-                android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
-                // Log actual stored values for verification
-                java.util.Set<String> storedDays = prefs.getStringSet("pref_notification_days", new java.util.HashSet<>());
-                android.util.Log.d("SettingsActivity", "Stored notification days in SharedPreferences: " + storedDays);
-                String storedTimeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
-                android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
-                return true;
-            });
+                    // Save cleaned set to SharedPreferences
+                    android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+                    android.content.SharedPreferences.Editor editor = prefs.edit();
+                    editor.putStringSet("pref_notification_days_notif", cleanedDays);
+                    editor.apply();
+                    android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
+                    // Log actual stored values for verification
+                    java.util.Set<String> storedDays = prefs.getStringSet("pref_notification_days_notif", new java.util.HashSet<>());
+                    android.util.Log.d("SettingsActivity", "Stored notification days in SharedPreferences: " + storedDays);
+                    String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
+                    android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
+                    return true;
+                });
+            }
 
             // Log changes to notification time range with detailed parsing
-            com.example.amio.TimeRangePreference timeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range");
-            timeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
-                String newTimeRange = (String) newValue;
-                String[] parts = newTimeRange.split("-");
-                if (parts.length == 2) {
-                    android.util.Log.d("SettingsActivity", "Notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
-                } else {
-                    android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
-                }
-                // Log actual stored value for verification
-                android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
-                String storedTimeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
-                android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
-                return true;
-            });
+            com.example.amio.TimeRangePreference timeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range_notif");
+            if (timeRangePref != null) {
+                timeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String newTimeRange = (String) newValue;
+                    String[] parts = newTimeRange.split("-");
+                    if (parts.length == 2) {
+                        android.util.Log.d("SettingsActivity", "Notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
+                    } else {
+                        android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
+                    }
+                    // Log actual stored value for verification
+                    android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+                    String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
+                    android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
+                    return true;
+                });
+            }
     }
 
     @Override
@@ -175,20 +179,21 @@ public class SettingsActivity extends PreferenceActivity {
             android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
             SettingsManager settingsManager = new SettingsManager(this);
             boolean enabled = settingsManager.getBoolean("pref_service_enabled", true);
-            servicePref.setChecked(enabled);
+            if (servicePref != null) servicePref.setChecked(enabled);
 
-                // Sync notification checkbox state
-                android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled");
-                boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled", true);
-                notifPref.setChecked(notifEnabled);
+            // Sync notification checkbox state
+            android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled_notif");
+            boolean notifEnabled = settingsManager.getBoolean("pref_notifications_enabled_notif", true);
+            if (notifPref != null) notifPref.setChecked(notifEnabled);
 
-                // Sync vibrate checkbox state
-                android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate");
-                boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate", true);
-                vibratePref.setChecked(vibrateEnabled);
-                // Sync polling interval summary
-                android.preference.EditTextPreference pollingPref = (android.preference.EditTextPreference) findPreference("pref_polling_interval");
-                String pollingValue = settingsManager.getString("pref_polling_interval", "10");
-                pollingPref.setSummary("Current: " + pollingValue + " seconds");
+            // Sync vibrate checkbox state
+            android.preference.CheckBoxPreference vibratePref = (android.preference.CheckBoxPreference) findPreference("pref_vibrate_notif");
+            boolean vibrateEnabled = settingsManager.getBoolean("pref_vibrate_notif", true);
+            if (vibratePref != null) vibratePref.setChecked(vibrateEnabled);
+
+            // Sync polling interval summary
+            android.preference.EditTextPreference pollingPref = (android.preference.EditTextPreference) findPreference("pref_polling_interval");
+            String pollingValue = settingsManager.getString("pref_polling_interval", "10");
+            if (pollingPref != null) pollingPref.setSummary("Current: " + pollingValue + " seconds");
         }
 }

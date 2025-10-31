@@ -40,7 +40,7 @@ public class TimeRangePreference extends DialogPreference {
             endMinute = endPicker.getCurrentMinute();
             String value = String.format("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute);
             android.content.SharedPreferences sharedPreferences = getContext().getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
-            sharedPreferences.edit().putString(getKey(), value).apply();
+            sharedPreferences.edit().putString("pref_notification_time_range_notif", value).apply();
             setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
             android.util.Log.d("TimeRangePreference", "Time range changed: " + value);
         }
@@ -49,7 +49,7 @@ public class TimeRangePreference extends DialogPreference {
     @Override
     protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
         android.content.SharedPreferences sharedPreferences = getContext().getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
-        String value = restorePersistedValue ? sharedPreferences.getString(getKey(), "08:00-20:00") : (String) defaultValue;
+        String value = restorePersistedValue ? sharedPreferences.getString("pref_notification_time_range_notif", "08:00-20:00") : (String) defaultValue;
         if (value != null && value.matches("\\d{2}:\\d{2}-\\d{2}:\\d{2}")) {
             String[] parts = value.split("[-:]");
             startHour = Integer.parseInt(parts[0]);

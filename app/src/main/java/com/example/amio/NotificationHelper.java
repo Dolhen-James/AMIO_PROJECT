@@ -117,14 +117,14 @@ public class NotificationHelper {
         Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
 
         // Check if notifications are enabled in preferences
-        boolean notificationsEnabled = prefs.getBoolean("pref_notifications_enabled", true);
+        boolean notificationsEnabled = prefs.getBoolean("pref_notifications_enabled_notif", true);
         if (!notificationsEnabled) {
             Log.d(TAG, "Notifications disabled in preferences - skipping notification");
             return;
         }
 
         // Check if today is in allowed notification days
-        java.util.Set<String> allowedDays = prefs.getStringSet("pref_notification_days", null);
+        java.util.Set<String> allowedDays = prefs.getStringSet("pref_notification_days_notif", null);
         if (allowedDays == null || allowedDays.isEmpty()) {
             Log.d(TAG, "No notification days set - skipping notification");
             return;
@@ -148,7 +148,7 @@ public class NotificationHelper {
 
         // Always read the latest time range from SharedPreferences
     SharedPreferences freshPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
-    String timeRange = freshPrefs.getString("pref_notification_time_range", "08:00-20:00");
+    String timeRange = freshPrefs.getString("pref_notification_time_range_notif", "08:00-20:00");
     Log.d(TAG, "Time range check: raw value from SharedPreferences: " + timeRange);
     String[] parts = timeRange.split("-");
         if (parts.length != 2) {
@@ -223,7 +223,7 @@ public class NotificationHelper {
         // Send notification
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
-        boolean vibrateEnabled = prefs.getBoolean("pref_vibrate", true);
+    boolean vibrateEnabled = prefs.getBoolean("pref_vibrate_notif", true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) {
