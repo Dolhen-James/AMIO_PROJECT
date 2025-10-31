@@ -146,10 +146,13 @@ public class NotificationHelper {
             return;
         }
 
-        // Check if current time is within allowed notification time range
-        String timeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
-        String[] parts = timeRange.split("-");
+        // Always read the latest time range from SharedPreferences
+    SharedPreferences freshPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+    String timeRange = freshPrefs.getString("pref_notification_time_range", "08:00-20:00");
+    Log.d(TAG, "Time range check: raw value from SharedPreferences: " + timeRange);
+    String[] parts = timeRange.split("-");
         if (parts.length != 2) {
+            Log.d(TAG, "Time range check: invalid format: " + timeRange);
             Log.d(TAG, "Invalid time range format - skipping notification");
             return;
         }
@@ -163,7 +166,9 @@ public class NotificationHelper {
             startMinute = Integer.parseInt(startParts[1]);
             endHour = Integer.parseInt(endParts[0]);
             endMinute = Integer.parseInt(endParts[1]);
+            Log.d(TAG, "Time range check: start=" + startHour + ":" + startMinute + ", end=" + endHour + ":" + endMinute);
         } catch (Exception e) {
+            Log.d(TAG, "Time range check: error parsing time range: " + timeRange);
             Log.d(TAG, "Error parsing time range - skipping notification");
             return;
         }
@@ -173,12 +178,14 @@ public class NotificationHelper {
         int now = nowHour * 60 + nowMinute;
         int start = startHour * 60 + startMinute;
         int end = endHour * 60 + endMinute;
+        Log.d(TAG, "Time range check: now=" + nowHour + ":" + nowMinute + ", start=" + start + ", end=" + end);
         if (start <= end) {
             inRange = (now >= start && now <= end);
         } else {
             // Overnight range (e.g., 22:00-06:00)
             inRange = (now >= start || now <= end);
         }
+        Log.d(TAG, "Time range check: inRange=" + inRange);
         if (!inRange) {
             Log.d(TAG, "Current time not in allowed notification range (" + timeRange + ") - skipping notification");
             return;

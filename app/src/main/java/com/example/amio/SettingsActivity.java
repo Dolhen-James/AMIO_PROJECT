@@ -107,14 +107,28 @@ public class SettingsActivity extends PreferenceActivity {
                 editor.putStringSet("pref_notification_days", cleanedDays);
                 editor.apply();
                 android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
+                // Log actual stored values for verification
+                java.util.Set<String> storedDays = prefs.getStringSet("pref_notification_days", new java.util.HashSet<>());
+                android.util.Log.d("SettingsActivity", "Stored notification days in SharedPreferences: " + storedDays);
+                String storedTimeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
+                android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
                 return true;
             });
 
-            // Log changes to notification time range
+            // Log changes to notification time range with detailed parsing
             com.example.amio.TimeRangePreference timeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range");
             timeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
                 String newTimeRange = (String) newValue;
-                android.util.Log.d("SettingsActivity", "Notification time range changed: " + newTimeRange);
+                String[] parts = newTimeRange.split("-");
+                if (parts.length == 2) {
+                    android.util.Log.d("SettingsActivity", "Notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
+                } else {
+                    android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
+                }
+                // Log actual stored value for verification
+                android.content.SharedPreferences prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+                String storedTimeRange = prefs.getString("pref_notification_time_range", "08:00-20:00");
+                android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
                 return true;
             });
     }
