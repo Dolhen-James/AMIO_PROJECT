@@ -44,6 +44,17 @@ public class SettingsActivity extends PreferenceActivity {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
 
+        // Sync "Start on Boot" checkbox with amio_prefs
+        android.preference.CheckBoxPreference bootStartPref = (android.preference.CheckBoxPreference) findPreference("pref_boot_start");
+        android.content.SharedPreferences amioPrefs = getSharedPreferences("amio_prefs", MODE_PRIVATE);
+        boolean bootStartEnabled = amioPrefs.getBoolean("start_service_on_boot", false);
+        bootStartPref.setChecked(bootStartEnabled);
+        bootStartPref.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean isChecked = (Boolean) newValue;
+            amioPrefs.edit().putBoolean("start_service_on_boot", isChecked).apply();
+            return true;
+        });
+
         // Get reference to the "Enable Service" CheckBoxPreference
         android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
         SettingsManager settingsManager = new SettingsManager(this);
@@ -59,11 +70,12 @@ public class SettingsActivity extends PreferenceActivity {
 
             // Start or stop the service accordingly
             Intent serviceIntent = new Intent(this, MainService.class);
-            if (isChecked) {
-                startService(serviceIntent);
-            } else {
-                stopService(serviceIntent);
-            }
+if (isChecked) {
+    startService(serviceIntent);
+    MainActivity.updateServiceUI(this);
+} else {
+    stopService(serviceIntent);
+}
             return true;
         });
             // Polling Interval EditTextPreference: show current value as summary

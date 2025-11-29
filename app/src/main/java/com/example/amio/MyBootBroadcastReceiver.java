@@ -23,11 +23,26 @@ public class MyBootBroadcastReceiver extends BroadcastReceiver {
             boolean startServiceOnBoot = prefs.getBoolean("start_service_on_boot", false);
             Log.d("MyBootBroadcastReceiver", "onReceive: startServiceOnBoot=" + startServiceOnBoot);
 
-            if (startServiceOnBoot) {
-                Intent serviceIntent = new Intent(context, MainService.class);
-                context.startService(serviceIntent);
-                Log.d("MyBootBroadcastReceiver", "onReceive: MainService started");
-            }
+if (startServiceOnBoot) {
+    // Update service enabled preference for UI sync
+    SharedPreferences settingsPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+    settingsPrefs.edit().putBoolean("pref_service_enabled", true).apply();
+
+    Intent serviceIntent = new Intent(context, MainService.class);
+    context.startService(serviceIntent);
+    MainActivity.updateServiceUI(context);
+    Log.d("MyBootBroadcastReceiver", "onReceive: MainService started");
+} else {
+    // Ensure service is not running and UI is updated
+    SharedPreferences settingsPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+    settingsPrefs.edit().putBoolean("pref_service_enabled", false).apply();
+    Log.d("MyBootBroadcastReceiver", "onReceive: startServiceOnBoot is false, service not started");
+    // Optionally stop service if running (defensive)
+    Intent serviceIntent = new Intent(context, MainService.class);
+    context.stopService(serviceIntent);
+    // Update UI to reflect service stopped
+    // (UI update will occur when MainActivity resumes)
+}
         }
     }
 }

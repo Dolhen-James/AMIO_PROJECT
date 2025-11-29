@@ -93,8 +93,11 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         // Initialize notification helper
         notificationHelper = new NotificationHelper(this);
 
-        // Start periodic data fetching
+            // Start periodic data fetching
     startPeriodicFetch();
+
+    // Broadcast service running state for UI sync
+    broadcastResult("Service started", null);
     }
 
     private void startPeriodicFetch() {
@@ -142,7 +145,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     private void fetchDataFromServer() {
         Log.d(TAG, "Fetching data from server...");
 
-        String urlStr = prefs.getString("server_url", "http://37.59.110.9:8080/AMIO-API");
+        String urlStr = prefs.getString("server_url", "http://37.59.110.9:8000/AMIO-API");
 
         HttpURLConnection conn = null;
         try {

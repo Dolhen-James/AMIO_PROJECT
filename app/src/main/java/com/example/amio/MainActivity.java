@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,6 +39,31 @@ import java.util.Locale;
  * TP3: BroadcastReceiver for service communication
  */
 public class MainActivity extends AppCompatActivity implements ServiceBroadcastCallback {
+
+    /**
+     * Call this function whenever the service is activated (main menu, settings, boot).
+     * It updates all relevant UI and preferences to keep everything consistent.
+     */
+    public static void updateServiceUI(Context context) {
+        // Set service enabled preference
+        SharedPreferences prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("pref_service_enabled", true).apply();
+
+        // If MainActivity is visible, update service status UI
+        if (context instanceof MainActivity) {
+            MainActivity activity = (MainActivity) context;
+            activity.isServiceRunning = true;
+            activity.updateServiceStatus();
+        }
+
+        // If SettingsActivity is visible, update checkbox UI
+        if (context instanceof SettingsActivity) {
+            SettingsActivity settingsActivity = (SettingsActivity) context;
+            android.preference.CheckBoxPreference servicePref =
+                (android.preference.CheckBoxPreference) settingsActivity.findPreference("pref_service_enabled");
+            if (servicePref != null) servicePref.setChecked(true);
+        }
+    }
     // ...existing code...
     // Implement ServiceBroadcastCallback to decouple receiver from activity
     // @Override
@@ -148,16 +174,18 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     /**
      * Start the MainService
      */
-    private void startService() {
-        Log.d(TAG, "Starting MainService");
-        Intent intent = new Intent(this, MainService.class);
-        startService(intent);
-        updateServiceStatus();
+private void startService() {
+    Log.d(TAG, "Starting MainService");
+    Intent intent = new Intent(this, MainService.class);
+    startService(intent);
 
-            // Update SharedPreferences so SettingsActivity reflects the change
-            SettingsManager settingsManager = new SettingsManager(this);
-            settingsManager.setBoolean("pref_service_enabled", true);
-    }
+    // Unified UI update
+    updateServiceUI(this);
+
+    // Update SharedPreferences so SettingsActivity reflects the change
+    SettingsManager settingsManager = new SettingsManager(this);
+    settingsManager.setBoolean("pref_service_enabled", true);
+}
 
     /**
      * Stop the MainService
@@ -176,21 +204,30 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     /**
      * Check if MainService is currently running and update UI accordingly
      */
-    private void updateServiceStatus() {
-        isServiceRunning = isServiceRunning(MainService.class);
+private void updateServiceStatus() {
+    isServiceRunning = isServiceRunning(MainService.class);
 
-        if (isServiceRunning) {
-            btnToggleService.setText(getString(R.string.toggle_stop_service));
-            tvServiceStatus.setText(getString(R.string.service_status_running));
-            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_running));
-        } else {
-            btnToggleService.setText(getString(R.string.toggle_start_service));
-            tvServiceStatus.setText(getString(R.string.service_status_stopped));
-            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_stopped));
-        }
-
-        Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped"));
+    if (isServiceRunning) {
+        btnToggleService.setText(getString(R.string.toggle_stop_service));
+        tvServiceStatus.setText(getString(R.string.service_status_running));
+        tvServiceStatus.setTextColor(getResources().getColor(R.color.service_running));
+    } else {
+        btnToggleService.setText(getString(R.string.toggle_start_service));
+        tvServiceStatus.setText(getString(R.string.service_status_stopped));
+        tvServiceStatus.setTextColor(getResources().getColor(R.color.service_stopped));
     }
+
+    // Update "start on boot" status
+    TextView tvBootStatus = findViewById(R.id.tvBootStatus);
+    android.content.SharedPreferences bootPrefs = getSharedPreferences("amio_prefs", MODE_PRIVATE);
+    boolean startOnBoot = bootPrefs.getBoolean("start_service_on_boot", false);
+    if (tvBootStatus != null) {
+        tvBootStatus.setText(startOnBoot ? "true" : "false");
+    }
+
+    Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped") +
+            ", start on boot: " + startOnBoot);
+}
 
     /**
      * Update the last check timestamp display
@@ -312,4 +349,3 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         return super.onOptionsItemSelected(item);
     }
 }
-

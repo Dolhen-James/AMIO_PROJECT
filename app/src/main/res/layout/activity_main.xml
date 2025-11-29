@@ -48,21 +48,35 @@
             android:textStyle="bold"
             android:layout_marginTop="8dp" />
         android:layout_height="wrap_content"
-        <TextView
-            android:id="@+id/tvServiceStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Stopped"
-            android:textColor="#FF0000"
-            android:layout_marginBottom="16dp" />
-        android:layout_height="wrap_content"
-        <!-- Last check timestamp -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Last Check:"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp" />
+<TextView
+    android:id="@+id/tvServiceStatus"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Stopped"
+    android:textColor="#FF0000"
+    android:layout_marginBottom="16dp" />
+
+<!-- Start on boot status -->
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Start on boot:"
+    android:textStyle="bold"
+    android:layout_marginTop="8dp" />
+<TextView
+    android:id="@+id/tvBootStatus"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="false"
+    android:layout_marginBottom="16dp" />
+
+<!-- Last check timestamp -->
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Last Check:"
+    android:textStyle="bold"
+    android:layout_marginTop="8dp" />
         android:background="#CCCCCC"
         <TextView
             android:id="@+id/tvLastCheck"

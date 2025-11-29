@@ -66,7 +66,7 @@ public class SensorFetchManager {
 
     private void fetchDataFromServer() {
         Log.d(TAG, "Fetching data from server...");
-        String urlStr = prefs.getString("server_url", "http://37.59.110.9:8080/AMIO-API");
+        String urlStr = prefs.getString("server_url", "http://37.59.110.9:8000/AMIO-API");
         HttpURLConnection conn = null;
         try {
             URL url = new URL(urlStr);
