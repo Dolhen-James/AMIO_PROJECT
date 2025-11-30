@@ -45,10 +45,12 @@ public class NotificationHelper {
 
     private final Context context;
     private final SharedPreferences prefs;
+    private final EmailNotificationService emailNotificationService;
 
     public NotificationHelper(Context context) {
         this.context = context;
     this.prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+        this.emailNotificationService = new EmailNotificationService(context);
         createNotificationChannel();
     }
 
@@ -116,7 +118,14 @@ public class NotificationHelper {
     public void sendGroupedNotification(List<String> motesOn, List<String> motesOff) {
         Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
 
-        // Check if notifications are enabled in preferences
+        // Always attempt to send email notifications (has its own preference checks)
+        try {
+            emailNotificationService.sendGroupedEmailNotification(motesOn, motesOff);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to send email notification", e);
+        }
+
+        // Check if in-app notifications are enabled in preferences
         boolean notificationsEnabled = prefs.getBoolean("pref_notifications_enabled_notif", true);
         if (!notificationsEnabled) {
             Log.d(TAG, "Notifications disabled in preferences - skipping notification");

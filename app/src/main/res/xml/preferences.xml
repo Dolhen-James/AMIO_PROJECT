@@ -56,6 +56,57 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="Email Notification Settings"
+        android:key="pref_email_notifications">
+
+        <CheckBoxPreference
+            android:key="pref_email_notifications_enabled"
+            android:title="Enable Email Notifications"
+            android:summary="Send email notifications for sensor alerts"
+            android:defaultValue="false" />
+
+        <EditTextPreference
+            android:key="pref_email_recipient"
+            android:title="Recipient Email"
+            android:summary="Email address to receive notifications"
+            android:defaultValue=""
+            android:inputType="textEmailAddress"
+            android:dependency="pref_email_notifications_enabled" />
+
+        <EditTextPreference
+            android:key="pref_email_client_id"
+            android:title="NotificationAPI Client ID"
+            android:summary="Client ID for NotificationAPI service"
+            android:defaultValue=""
+            android:dependency="pref_email_notifications_enabled" />
+
+        <EditTextPreference
+            android:key="pref_email_client_secret"
+            android:title="NotificationAPI Client Secret"
+            android:summary="Client Secret for NotificationAPI service"
+            android:defaultValue=""
+            android:inputType="textPassword"
+            android:dependency="pref_email_notifications_enabled" />
+
+        <MultiSelectListPreference
+            android:key="pref_email_notification_days"
+            android:title="Email Notification Days"
+            android:summary="Select days to receive email notifications"
+            android:entries="@array/days_of_week"
+            android:entryValues="@array/days_of_week_values"
+            android:defaultValue="@array/days_of_week_default"
+            android:dependency="pref_email_notifications_enabled" />
+
+        <com.example.amio.TimeRangePreference
+            android:key="pref_email_notification_time_range"
+            android:title="Email Notification Time Range"
+            android:summary="Select start and end time for email notifications"
+            android:defaultValue="18:00-23:00"
+            android:dependency="pref_email_notifications_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="Service Settings"
         android:key="pref_service">
 

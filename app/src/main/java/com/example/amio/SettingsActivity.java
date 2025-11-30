@@ -166,6 +166,127 @@ if (isChecked) {
                     return true;
                 });
             }
+
+            // ===== EMAIL NOTIFICATION SETTINGS =====
+
+            // Initialize default email notification settings if not present
+            if (!prefs.contains("pref_email_notifications_enabled")) {
+                prefs.edit().putBoolean("pref_email_notifications_enabled", false).apply();
+            }
+            if (!prefs.contains("pref_email_notification_days")) {
+                java.util.HashSet<String> defaultEmailDays = new java.util.HashSet<>();
+                defaultEmailDays.add("Mon"); defaultEmailDays.add("Tue"); defaultEmailDays.add("Wed"); defaultEmailDays.add("Thu"); defaultEmailDays.add("Fri");
+                prefs.edit().putStringSet("pref_email_notification_days", defaultEmailDays).apply();
+            }
+            if (!prefs.contains("pref_email_notification_time_range")) {
+                prefs.edit().putString("pref_email_notification_time_range", "18:00-23:00").apply();
+            }
+
+            // Get reference to "Enable Email Notifications" CheckBoxPreference
+            android.preference.CheckBoxPreference emailNotifPref = (android.preference.CheckBoxPreference) findPreference("pref_email_notifications_enabled");
+            if (emailNotifPref != null) {
+                boolean emailNotifEnabled = settingsManager.getBoolean("pref_email_notifications_enabled", false);
+                emailNotifPref.setChecked(emailNotifEnabled);
+
+                emailNotifPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    boolean isChecked = (Boolean) newValue;
+                    settingsManager.setBoolean("pref_email_notifications_enabled", isChecked);
+                    android.util.Log.d("SettingsActivity", "Email notifications enabled: " + isChecked);
+                    return true;
+                });
+            }
+
+            // Get reference to "Recipient Email" EditTextPreference
+            android.preference.EditTextPreference emailRecipientPref = (android.preference.EditTextPreference) findPreference("pref_email_recipient");
+            if (emailRecipientPref != null) {
+                String recipientEmail = settingsManager.getString("pref_email_recipient", "");
+                emailRecipientPref.setSummary(recipientEmail.isEmpty() ? "Email address to receive notifications" : "Current: " + recipientEmail);
+
+                emailRecipientPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String newEmail = (String) newValue;
+                    settingsManager.setString("pref_email_recipient", newEmail);
+                    emailRecipientPref.setSummary(newEmail.isEmpty() ? "Email address to receive notifications" : "Current: " + newEmail);
+                    android.util.Log.d("SettingsActivity", "Recipient email changed: " + newEmail);
+                    return true;
+                });
+            }
+
+            // Get reference to "NotificationAPI Client ID" EditTextPreference
+            android.preference.EditTextPreference clientIdPref = (android.preference.EditTextPreference) findPreference("pref_email_client_id");
+            if (clientIdPref != null) {
+                String clientId = settingsManager.getString("pref_email_client_id", "");
+                clientIdPref.setSummary(clientId.isEmpty() ? "Client ID for NotificationAPI service" : "Configured");
+
+                clientIdPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String newClientId = (String) newValue;
+                    settingsManager.setString("pref_email_client_id", newClientId);
+                    clientIdPref.setSummary(newClientId.isEmpty() ? "Client ID for NotificationAPI service" : "Configured");
+                    android.util.Log.d("SettingsActivity", "NotificationAPI Client ID updated");
+                    return true;
+                });
+            }
+
+            // Get reference to "NotificationAPI Client Secret" EditTextPreference
+            android.preference.EditTextPreference clientSecretPref = (android.preference.EditTextPreference) findPreference("pref_email_client_secret");
+            if (clientSecretPref != null) {
+                String clientSecret = settingsManager.getString("pref_email_client_secret", "");
+                clientSecretPref.setSummary(clientSecret.isEmpty() ? "Client Secret for NotificationAPI service" : "Configured");
+
+                clientSecretPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String newClientSecret = (String) newValue;
+                    settingsManager.setString("pref_email_client_secret", newClientSecret);
+                    clientSecretPref.setSummary(newClientSecret.isEmpty() ? "Client Secret for NotificationAPI service" : "Configured");
+                    android.util.Log.d("SettingsActivity", "NotificationAPI Client Secret updated");
+                    return true;
+                });
+            }
+
+            // Get reference to "Email Notification Days" MultiSelectListPreference
+            android.preference.MultiSelectListPreference emailDaysPref = (android.preference.MultiSelectListPreference) findPreference("pref_email_notification_days");
+            if (emailDaysPref != null) {
+                emailDaysPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    java.util.Set<String> selectedDays = (java.util.Set<String>) newValue;
+                    CharSequence[] entryValuesCs = emailDaysPref.getEntryValues();
+                    CharSequence[] entries = emailDaysPref.getEntries();
+                    String[] validDayValues = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+                    java.util.Set<String> cleanedDays = new java.util.HashSet<>();
+                    StringBuilder displayNames = new StringBuilder();
+                    for (String value : selectedDays) {
+                        for (int i = 0; i < entryValuesCs.length; i++) {
+                            if (entryValuesCs[i].toString().equals(value)) {
+                                displayNames.append(entries[i]).append(" (").append(value).append(") ");
+                            }
+                        }
+                        // Only add valid entry values
+                        for (String valid : validDayValues) {
+                            if (value.equals(valid)) {
+                                cleanedDays.add(valid);
+                            }
+                        }
+                    }
+                    // Save cleaned set to SharedPreferences
+                    android.content.SharedPreferences.Editor editor = prefs.edit();
+                    editor.putStringSet("pref_email_notification_days", cleanedDays);
+                    editor.apply();
+                    android.util.Log.d("SettingsActivity", "Email notification days changed: values=" + cleanedDays);
+                    return true;
+                });
+            }
+
+            // Get reference to "Email Notification Time Range" TimeRangePreference
+            com.example.amio.TimeRangePreference emailTimeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_email_notification_time_range");
+            if (emailTimeRangePref != null) {
+                emailTimeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String newTimeRange = (String) newValue;
+                    String[] parts = newTimeRange.split("-");
+                    if (parts.length == 2) {
+                        android.util.Log.d("SettingsActivity", "Email notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
+                    } else {
+                        android.util.Log.d("SettingsActivity", "Email notification time range changed: invalid format: " + newTimeRange);
+                    }
+                    return true;
+                });
+            }
     }
 
     @Override
@@ -226,5 +347,31 @@ if (isChecked) {
             android.preference.EditTextPreference pollingPref = (android.preference.EditTextPreference) findPreference("pref_polling_interval");
             String pollingValue = settingsManager.getString("pref_polling_interval", "10");
             if (pollingPref != null) pollingPref.setSummary("Current: " + pollingValue + " seconds");
+
+            // Sync email notification checkbox state
+            android.preference.CheckBoxPreference emailNotifPref = (android.preference.CheckBoxPreference) findPreference("pref_email_notifications_enabled");
+            boolean emailNotifEnabled = settingsManager.getBoolean("pref_email_notifications_enabled", false);
+            if (emailNotifPref != null) emailNotifPref.setChecked(emailNotifEnabled);
+
+            // Sync email recipient summary
+            android.preference.EditTextPreference emailRecipientPref = (android.preference.EditTextPreference) findPreference("pref_email_recipient");
+            String recipientEmail = settingsManager.getString("pref_email_recipient", "");
+            if (emailRecipientPref != null) {
+                emailRecipientPref.setSummary(recipientEmail.isEmpty() ? "Email address to receive notifications" : "Current: " + recipientEmail);
+            }
+
+            // Sync client ID summary
+            android.preference.EditTextPreference clientIdPref = (android.preference.EditTextPreference) findPreference("pref_email_client_id");
+            String clientId = settingsManager.getString("pref_email_client_id", "");
+            if (clientIdPref != null) {
+                clientIdPref.setSummary(clientId.isEmpty() ? "Client ID for NotificationAPI service" : "Configured");
+            }
+
+            // Sync client secret summary
+            android.preference.EditTextPreference clientSecretPref = (android.preference.EditTextPreference) findPreference("pref_email_client_secret");
+            String clientSecret = settingsManager.getString("pref_email_client_secret", "");
+            if (clientSecretPref != null) {
+                clientSecretPref.setSummary(clientSecret.isEmpty() ? "Client Secret for NotificationAPI service" : "Configured");
+            }
         }
 }
