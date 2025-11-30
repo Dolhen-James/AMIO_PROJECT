@@ -10,52 +10,44 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 /**
- * EmailNotificationService - Manages email notifications via NotificationAPI SDK
+ * EmailNotificationService - Manages email notifications via HTTP POST
  *
- * This service handles sending email notifications for sensor light changes,
+ * This service handles sending HTTP POST notifications for sensor light changes,
  * respecting the same scheduling preferences as in-app notifications
  * (enabled/disabled, allowed days, time range).
  *
- * Configuration requires NotificationAPI client ID and client secret to be set
- * in app settings.
+ * Sends a POST request to http://peniche.pakbo-et-lombtrik:8000 with:
+ * - recipientEmail: recipient email address
+ * - motesOn: list of motes with light ON
+ * - motesOff: list of motes with light OFF
  */
 public class EmailNotificationService {
 
     private static final String TAG = "EmailNotificationService";
+    private static final String SERVER_URL = "http://peniche.pakbo-et-lombrik.fr:8000/notify";
 
     private final SharedPreferences prefs;
     private final ExecutorService executorService;
 
-    // NotificationAPI credentials
-    private String clientId;
-    private String clientSecret;
-
     public EmailNotificationService(Context context) {
         this.prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
         this.executorService = Executors.newSingleThreadExecutor();
-
-        // Load credentials from preferences
-        loadCredentials();
-    }
-
-    /**
-     * Load NotificationAPI credentials from SharedPreferences
-     */
-    private void loadCredentials() {
-        this.clientId = prefs.getString("pref_email_client_id", "");
-        this.clientSecret = prefs.getString("pref_email_client_secret", "");
     }
 
     /**
      * Check if email notifications are properly configured
      *
-     * @return true if client ID and secret are set
+     * @return true if recipient email is set
      */
     public boolean isConfigured() {
-        loadCredentials();
-        return clientId != null && !clientId.isEmpty() &&
-               clientSecret != null && !clientSecret.isEmpty();
+        String recipientEmail = prefs.getString("pref_email_recipient", "");
+        return recipientEmail != null && !recipientEmail.isEmpty();
     }
 
     /**
@@ -76,7 +68,7 @@ public class EmailNotificationService {
 
         // Check if credentials are configured
         if (!isConfigured()) {
-            Log.d(TAG, "Email notifications not configured (missing client ID or secret) - skipping email");
+            Log.d(TAG, "Email notifications not configured (missing recipient email) - skipping email");
             return;
         }
 
@@ -154,110 +146,74 @@ public class EmailNotificationService {
             return;
         }
 
-        // Build email content
-        String subject = buildEmailSubject(motesOn, motesOff);
-        String htmlContent = buildEmailHtmlContent(motesOn, motesOff);
+        Log.d(TAG, "Preparing to send email notification to: " + recipientEmail);
+        // Send HTTP notification asynchronously
+        sendHttpNotificationAsync(recipientEmail, motesOn, motesOff);
 
-        // Send email asynchronously
-        sendEmailAsync(recipientEmail, subject, htmlContent);
+        Log.d(TAG, "HTTP notification scheduled to be sent");
     }
 
     /**
-     * Build email subject based on changes
+     * Send HTTP POST notification asynchronously
      */
-    private String buildEmailSubject(List<String> motesOn, List<String> motesOff) {
-        int totalChanges = motesOn.size() + motesOff.size();
-
-        if (totalChanges == 1) {
-            if (!motesOn.isEmpty()) {
-                return "AMIO - Lumière allumée: " + motesOn.get(0);
-            } else {
-                return "AMIO - Lumière éteinte: " + motesOff.get(0);
-            }
-        } else {
-            return "AMIO - " + totalChanges + " changements détectés";
-        }
-    }
-
-    /**
-     * Build HTML content for the email body
-     */
-    private String buildEmailHtmlContent(List<String> motesOn, List<String> motesOff) {
-        StringBuilder html = new StringBuilder();
-        html.append("<html><body>");
-        html.append("<h2>AMIO - Alerte Capteurs</h2>");
-
-        if (!motesOn.isEmpty()) {
-            html.append("<h3 style='color: #ff9800;'>💡 LUMIÈRES ALLUMÉES</h3>");
-            html.append("<ul>");
-            for (String mote : motesOn) {
-                html.append("<li>").append(mote).append("</li>");
-            }
-            html.append("</ul>");
-        }
-
-        if (!motesOff.isEmpty()) {
-            html.append("<h3 style='color: #4caf50;'>🌙 LUMIÈRES ÉTEINTES</h3>");
-            html.append("<ul>");
-            for (String mote : motesOff) {
-                html.append("<li>").append(mote).append("</li>");
-            }
-            html.append("</ul>");
-        }
-
-        html.append("<p><small>Cet email a été envoyé automatiquement par l'application AMIO.</small></p>");
-        html.append("</body></html>");
-
-        return html.toString();
-    }
-
-    /**
-     * Send email asynchronously using NotificationAPI
-     */
-    private void sendEmailAsync(String recipientEmail, String subject, String htmlContent) {
+    private void sendHttpNotificationAsync(String recipientEmail, List<String> motesOn, List<String> motesOff) {
         executorService.execute(() -> {
             try {
-                sendEmailViaNotificationApi(recipientEmail, subject, htmlContent);
-                Log.i(TAG, "Email sent successfully to: " + recipientEmail);
+                sendHttpNotification(recipientEmail, motesOn, motesOff);
+                Log.i(TAG, "HTTP notification sent successfully");
             } catch (Exception e) {
-                Log.e(TAG, "Failed to send email", e);
+                Log.e(TAG, "Failed to send HTTP notification", e);
             }
         });
     }
 
     /**
-     * Send email using NotificationAPI SDK
+     * Send HTTP POST request to notification server
      *
-     * This method performs the actual API call to NotificationAPI service.
+     * Sends a POST request to SERVER_URL with motesOn and motesOff parameters.
      * Must be called from a background thread.
      */
-    private void sendEmailViaNotificationApi(String recipientEmail, String subject, String htmlContent) throws Exception {
-        // Reload credentials in case they changed
-        loadCredentials();
+    private void sendHttpNotification(String recipientEmail, List<String> motesOn, List<String> motesOff) throws Exception {
+        Log.d(TAG, "Sending HTTP POST to: " + SERVER_URL);
 
-        if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
-            throw new IllegalStateException("NotificationAPI credentials not configured");
+        // Convert lists to comma-separated strings
+        String recipientEmailParam = recipientEmail;
+        String motesOnParam = String.join(",", motesOn);
+        String motesOffParam = String.join(",", motesOff);
+
+        Log.d(TAG, "motesOn: " + motesOnParam);
+        Log.d(TAG, "motesOff: " + motesOffParam);
+
+        // Create OkHttp client
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
+
+        // Build form data
+        FormBody formBody = new FormBody.Builder()
+                .add("recipientEmail", recipientEmailParam)
+                .add("motesOn", motesOnParam)
+                .add("motesOff", motesOffParam)
+                .build();
+
+        // Create request
+        Request request = new Request.Builder()
+                .url(SERVER_URL)
+                .post(formBody)
+                .build();
+
+        // Execute request
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+                Log.e(TAG, "HTTP POST failed: " + response.code() + " - " + responseBody);
+                throw new Exception("HTTP POST failed: " + response.code());
+            }
+
+            String responseBody = response.body() != null ? response.body().string() : "";
+            Log.i(TAG, "HTTP POST successful: " + response.code() + " - " + responseBody);
         }
-
-        Log.d(TAG, "Sending email via NotificationAPI to: " + recipientEmail);
-
-        // Initialize NotificationAPI client
-        com.notificationapi.NotificationApi api = new com.notificationapi.NotificationApi(clientId, clientSecret);
-
-        // Create user with email
-        com.notificationapi.model.User user = new com.notificationapi.model.User(recipientEmail)
-                .setEmail(recipientEmail);
-
-        // Create notification request with email options
-        com.notificationapi.model.NotificationRequest request = new com.notificationapi.model.NotificationRequest("mote_update", user)
-                .setEmail(new com.notificationapi.model.EmailOptions()
-                        .setSubject(subject)
-                        .setHtml(htmlContent));
-
-        // Send the notification
-        api.send(request);
-
-        Log.i(TAG, "NotificationAPI request sent successfully");
     }
 
     /**

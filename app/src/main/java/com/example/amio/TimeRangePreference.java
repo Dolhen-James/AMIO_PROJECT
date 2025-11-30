@@ -41,10 +41,13 @@ public class TimeRangePreference extends DialogPreference {
             endHour = endPicker.getCurrentHour();
             endMinute = endPicker.getCurrentMinute();
             String value = String.format("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute);
+
+            // Use getKey() to save to the correct preference key
             android.content.SharedPreferences sharedPreferences = getContext().getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
-            sharedPreferences.edit().putString("pref_notification_time_range_notif", value).apply();
+            sharedPreferences.edit().putString(getKey(), value).apply();
+
             setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
-            android.util.Log.d("TimeRangePreference", "Time range changed: " + value);
+            android.util.Log.d("TimeRangePreference", "Time range changed for key '" + getKey() + "': " + value);
         }
     }
 
