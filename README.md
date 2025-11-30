@@ -7,14 +7,16 @@ Ce projet est une application développée par **Lancelot** et **Baptiste** dans
 ### Objectif
 L'application permet d'afficher en temps réel l'état de motes IoT (capteurs) en récupérant les données via une API REST. Elle offre un système complet de notifications (push et email) pour alerter l'utilisateur en cas de changement d'état des capteurs.
 
-![Screenshot de l'application principale]
-*TODO: Ajouter screenshot*
+![general app view](resources/app.png)
 
 ---
 
 ## Fonctionnalités Principales
 
 ### 1. Affichage en Temps Réel des Données des Capteurs
+
+![general app view](resources/sensors.png)
+
 
 #### Description
 L'application affiche en direct l'état des motes IoT récupérées depuis un serveur API. Lorsque le service est activé, l'application effectue des appels périodiques à l'API pour récupérer les données des capteurs et met à jour l'interface utilisateur en temps réel.
@@ -62,12 +64,14 @@ L'application affiche en direct l'état des motes IoT récupérées depuis un se
 - Récepteur des broadcasts du service
 - Permet la communication entre le service et l'activité principale
 
-![Screenshot de l'affichage en temps réel]
-*TODO: Ajouter screenshot*
+
 
 ---
 
 ### 2. Page de Settings et Stockage des Données
+
+![general app view](resources/general_settings.png)
+
 
 #### Description
 L'application dispose d'une page de paramètres complète permettant de configurer le comportement du service, les notifications, et les plages horaires. Les préférences utilisateur sont stockées de manière persistante.
@@ -108,12 +112,13 @@ L'application dispose d'une page de paramètres complète permettant de configur
 #### Stockage des données
 Les données sont stockées dans les **SharedPreferences** Android, qui permettent un stockage clé-valeur persistant. Les préférences sont automatiquement sauvegardées lors de chaque modification et restaurées au lancement de l'application.
 
-![Screenshot de la page Settings]
-*TODO: Ajouter screenshot*
 
 ---
 
 ### 3. Notifications Push
+
+![general app view](resources/push_notif.png)
+
 
 #### Description
 Le système de notifications push alerte l'utilisateur en cas de changement d'état des capteurs. Les notifications respectent les plages horaires et les jours configurés dans les paramètres.
@@ -140,14 +145,19 @@ Les notifications respectent plusieurs paramètres configurables :
 - **Jours de notification** : `pref_notification_days_notif` (MultiSelectListPreference)
 - **Plage horaire** : `pref_notification_time_range_notif` (TimeRangePreference personnalisée)
 
+![general app view](resources/push_notif_settings.png)
+
+
 Le système vérifie automatiquement ces conditions avant d'envoyer une notification, garantissant que l'utilisateur ne soit alerté que selon ses préférences.
 
-![Screenshot d'une notification push]
-*TODO: Ajouter screenshot*
+
 
 ---
 
 ### 4. Notifications par Email
+
+![general app view](resources/mail.png)
+
 
 #### Description
 
@@ -172,12 +182,16 @@ Une section dédiée dans les paramètres permettra de configurer :
 - Plage horaire pour les emails
 - Client ID et Secret pour NotificationAPI
 
-![Screenshot des paramètres email]
-*TODO: Ajouter screenshot*
+![general app view](resources/email_notif_settings.png)
+![general app view](resources/email_notif_range.png)
+
 
 ---
 
 ### 5. Configuration du Serveur API et MockAPI
+
+![general app view](resources/service_settings.png)
+
 
 #### Description
 L'application permet de configurer dynamiquement l'URL du serveur API depuis lequel les données des capteurs sont récupérées. Cette flexibilité est essentielle pour le développement et les tests.
@@ -205,9 +219,6 @@ Pour faciliter le développement et les tests sans dépendre d'un serveur IoT ph
 - Permet de tester différents scénarios (changements d'état, erreurs réseau)
 - Peut être déployée localement ou sur un serveur de test
 
-
-![Screenshot de la configuration du serveur]
-*TODO: Ajouter screenshot*
 
 ---
 
