@@ -69,22 +69,24 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "Service created");
+        Log.i(TAG, "onCreate() - Service created");
 
         // Initialize SharedPreferences using Context directly
-    prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
+        prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
 
-            // Listen for polling interval changes
-            prefs.registerOnSharedPreferenceChangeListener(this);
+        // Listen for polling interval changes
+        prefs.registerOnSharedPreferenceChangeListener(this);
 
-            // Get initial polling interval
-            fetchIntervalMs = getPollingIntervalMs();
+        // Get initial polling interval
+        fetchIntervalMs = getPollingIntervalMs();
+        Log.d(TAG, "onCreate() - Polling interval: " + fetchIntervalMs + " ms");
 
         // Read threshold from preferences (with default)
         try {
             lightThreshold = Double.parseDouble(
                 prefs.getString("light_threshold", String.valueOf(SensorState.DEFAULT_LIGHT_THRESHOLD))
             );
+            Log.d(TAG, "onCreate() - Light threshold: " + lightThreshold);
         } catch (Exception e) {
             Log.w(TAG, "Invalid threshold in preferences, using default", e);
             lightThreshold = SensorState.DEFAULT_LIGHT_THRESHOLD;
@@ -92,12 +94,15 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         // Initialize notification helper
         notificationHelper = new NotificationHelper(this);
+        Log.d(TAG, "onCreate() - NotificationHelper initialized");
 
-            // Start periodic data fetching
-    startPeriodicFetch();
+        // Start periodic data fetching
+        startPeriodicFetch();
 
-    // Broadcast service running state for UI sync
-    broadcastResult("Service started", null);
+        // Broadcast service running state for UI sync
+        broadcastResult("Service started", null);
+
+        Log.i(TAG, "onCreate() - Service initialization complete");
     }
 
     private void startPeriodicFetch() {
@@ -317,13 +322,14 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Service onStartCommand");
+        Log.i(TAG, "onStartCommand() - Service command received. flags=" + flags + ", startId=" + startId);
 
         if (intent != null && ACTION_REQUEST_UPDATE.equals(intent.getAction())) {
             Log.d(TAG, "Received request for immediate update");
             broadcastResult("Current state", null);
         }
 
+        Log.i(TAG, "onStartCommand() - Returning START_STICKY to ensure service restarts after kill");
         return START_STICKY;
     }
 
