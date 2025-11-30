@@ -2,8 +2,6 @@ package com.example.amio;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import java.util.Calendar;
@@ -26,20 +24,16 @@ public class EmailNotificationService {
 
     private static final String TAG = "EmailNotificationService";
 
-    private final Context context;
     private final SharedPreferences prefs;
     private final ExecutorService executorService;
-    private final Handler mainHandler;
 
     // NotificationAPI credentials
     private String clientId;
     private String clientSecret;
 
     public EmailNotificationService(Context context) {
-        this.context = context;
         this.prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
         this.executorService = Executors.newSingleThreadExecutor();
-        this.mainHandler = new Handler(Looper.getMainLooper());
 
         // Load credentials from preferences
         loadCredentials();
