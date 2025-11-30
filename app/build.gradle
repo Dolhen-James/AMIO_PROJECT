@@ -4,14 +4,12 @@ plugins {
 
 android {
     namespace 'com.example.amio'
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.example.amio"
         minSdk 26
-        targetSdk 36
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -38,5 +36,10 @@ dependencies {
 
     // Added for PreferenceManager and SharedPreferences support
     implementation 'androidx.preference:preference:1.2.1'
+
+    // Email notification dependencies - NotificationAPI SDK
+    implementation 'com.notificationapi:notificationapi-java-server-sdk:0.3.0'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
 }
