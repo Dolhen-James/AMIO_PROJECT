@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * NotificationHelper - Manages all notification-related functionality
+ * NotificationHelper - Manages all push notifications-related functionality
  *
  * Handles:
  * - Notification channel creation
@@ -263,6 +263,7 @@ public class NotificationHelper {
             }
         } else {
             return "🔄 " + totalChanges + " changements détectés";
+
         }
     }
 
@@ -345,36 +346,4 @@ public class NotificationHelper {
         }
     }
 
-    /**
-     * Send email intent for critical alerts
-     *
-     * @param mote Sensor identifier
-     * @param label Sensor label
-     * @param value Sensor value
-     * @param timestamp Detection timestamp
-     * @param emailAddress Recipient email address
-     */
-    public void sendEmailIntent(String mote, String label, double value, long timestamp, String emailAddress) {
-        Log.d(TAG, "sendEmailIntent() mote=" + mote);
-
-        String subject = "AMIO - Lumière détectée: " + mote;
-        String body = String.format(java.util.Locale.getDefault(),
-            "Capteur %s (%s) détecte une lumière à %d (val=%.2f)", mote, label, timestamp, value);
-
-        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"));
-        if (emailAddress != null && !emailAddress.isEmpty()) {
-            emailIntent = new Intent(Intent.ACTION_SENDTO,
-                Uri.parse("mailto:" + Uri.encode(emailAddress)));
-        }
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
-        emailIntent.putExtra(Intent.EXTRA_TEXT, body);
-        emailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        try {
-            context.startActivity(Intent.createChooser(emailIntent, "Envoyer un email..."));
-            Log.i(TAG, "Email chooser launched");
-        } catch (Exception e) {
-            Log.e(TAG, "No email client available", e);
-        }
-    }
 }

@@ -28,9 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * This service runs a TimerTask at fixed intervals to check sensor data,
  * detect light changes, and trigger notifications/emails based on configured rules.
  *
- * TP1: Basic service structure with TimerTask
- * TP2: HTTP fetching and JSON parsing
- * TP3: Communication with MainActivity via broadcasts
  */
 public class MainService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -64,7 +61,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     // List of lights to monitor
     private static final String[] LIGHT_LABELS = {"light1", "light2"};
 
-    // Light detection threshold (calibration value)
+    // Light detection threshold (calibration value, used only at startup of the service)
     private double lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
 
     // Notification helper for all notification-related operations
@@ -78,12 +75,12 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         // Initialize SharedPreferences using Context directly
         prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
 
-        // Listen for polling interval changes
+        // Listen for polling interval or other setings changes
         prefs.registerOnSharedPreferenceChangeListener(this);
 
         // Get initial polling interval
         fetchIntervalMs = getPollingIntervalMs();
-        Log.d(TAG, "onCreate() - Polling interval: " + fetchIntervalMs + " ms");
+        //Log.d(TAG, "onCreate() - Polling interval: " + fetchIntervalMs + " ms");
 
         // Read threshold from preferences (with default)
         try {
@@ -96,17 +93,17 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
             lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
         }
 
-        // Initialize notification helper
+        // Initialize notification helper (for push notifications)
         notificationHelper = new NotificationHelper(this);
-        Log.d(TAG, "onCreate() - NotificationHelper initialized");
-
+        //Log.d(TAG, "onCreate() - NotificationHelper initialized");
         // Start periodic data fetching
         startPeriodicFetch();
 
         // Broadcast service running state for UI sync
         broadcastResult("Service started", null);
 
-        Log.i(TAG, "onCreate() - Service initialization complete");
+        //Log.i(TAG, "onCreate() - Service initialization complete");
+
     }
 
     private void startPeriodicFetch() {
@@ -154,7 +151,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     private void fetchDataFromServer() {
         Log.d(TAG, "Fetching data from server for all lights...");
 
-        String baseUrl = prefs.getString("server_url", "http://peniche.pakbo-et-lombrik.fr:8000");
+        String baseUrl = prefs.getString("server_url", "http://peniche.pakbo-et-lombrik.fr:8000"); // ceci est notre mock api
 
         // Track changes across all lights for grouped notification
         List<String> allMotesJustTurnedOn = new ArrayList<>();
@@ -166,7 +163,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         // Fetch data for each light
         for (String lightLabel : LIGHT_LABELS) {
-            String urlStr = baseUrl + "/iotlab/rest/data/1/" + lightLabel + "/last";
+            String urlStr = baseUrl + "/iotlab/rest/data/1/" + lightLabel + "/last"; // le chemin est le même pour notre mock api ou le serveur réel
 
             HttpURLConnection conn = null;
             try {
@@ -176,19 +173,16 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(10000);
 
-                Log.d(TAG, "Fetching " + lightLabel + " from URL: " + urlStr);
-
+                //Log.d(TAG, "Fetching " + lightLabel + " from URL: " + urlStr);
                 int responseCode = conn.getResponseCode();
-                Log.d(TAG, lightLabel + " - HTTP Response Code: " + responseCode);
+                //Log.d(TAG, lightLabel + " - HTTP Response Code: " + responseCode);
 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     InputStream inputStream = conn.getInputStream();
                     String jsonResponse = convertStreamToString(inputStream);
                     inputStream.close();
 
-                    Log.d(TAG, lightLabel + " - JSON Response: " + jsonResponse);
-
-                    // Parse and update states for this light
+                    //Log.d(TAG, lightLabel + " - JSON Response: " + jsonResponse);
                     parseJsonForLight(lightLabel, jsonResponse, allMotesJustTurnedOn, allMotesJustTurnedOff);
                     successfulFetches++;
 
@@ -233,6 +227,12 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         broadcastResultWithErrors(status, null, fetchErrors);
     }
 
+    /**
+     * Will be used to convert the answer from the API server to json format
+     * @param is answer from HTTP server
+     * @return answer as String
+     * @throws Exception
+     */
     private String convertStreamToString(InputStream is) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
         StringBuilder sb = new StringBuilder();
@@ -314,6 +314,10 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     }
 
 
+    /**
+     * Broadcast service results to MainActivity
+     * It is not really used anymore since it does not communicate errors, see broadcastResultWithErrors()
+     */
     private void broadcastResult(String status, String jsonData) {
         Log.d(TAG, "broadcastResult() called - status: " + status);
 
@@ -362,7 +366,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     }
 
     /**
-     * Broadcast service results with fetch error information to MainActivity
+     * Broadcast service results with fetch error information to MainActivity, enables better debugging and UI feedback
      */
     private void broadcastResultWithErrors(String status, String jsonData, List<String> fetchErrors) {
         Log.d(TAG, "broadcastResultWithErrors() called - status: " + status + ", errors: " + (fetchErrors != null ? fetchErrors.size() : "null"));
@@ -436,6 +440,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         return new ConcurrentHashMap<>(lightMoteStates);
     }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand() - Service command received. flags=" + flags + ", startId=" + startId);
@@ -446,7 +451,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         }
 
         Log.i(TAG, "onStartCommand() - Returning START_STICKY to ensure service restarts after kill");
-        return START_STICKY;
+        return START_STICKY; // comme vu en TP
     }
 
     @Override

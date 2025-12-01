@@ -14,7 +14,7 @@ public class LightMoteState {
     private long lastUpdated;
     private boolean isLightOn;
 
-    public static final double DEFAULT_LIGHT_THRESHOLD = 50.0;
+    public static final double DEFAULT_LIGHT_THRESHOLD = 250.0;
 
     public LightMoteState(String lightLabel, String moteId, double initialValue, long timestamp) {
         this.lightLabel = lightLabel;

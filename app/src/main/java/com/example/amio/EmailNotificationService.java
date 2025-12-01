@@ -22,7 +22,7 @@ import okhttp3.Response;
  * respecting the same scheduling preferences as in-app notifications
  * (enabled/disabled, allowed days, time range).
  *
- * Sends a POST request to http://peniche.pakbo-et-lombtrik:8000 with:
+ * Sends a POST request to http://peniche.pakbo-et-lombtrik:8000 (which will send the mail) with:
  * - recipientEmail: recipient email address
  * - motesOn: list of motes with light ON
  * - motesOff: list of motes with light OFF

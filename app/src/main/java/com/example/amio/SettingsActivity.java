@@ -2,7 +2,6 @@
 package com.example.amio;
 
 import android.content.Intent;
-import com.example.amio.MainService;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
@@ -324,14 +323,44 @@ if (isChecked) {
         return result;
     }
 
+    /**
+     * Check if MainService is currently running
+     * This checks the actual service state, not just SharedPreferences
+     */
+    private boolean isServiceRunning() {
+        android.app.ActivityManager manager = (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        if (manager != null) {
+            for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (MainService.class.getName().equals(service.service.getClassName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
         @Override
         protected void onResume() {
             super.onResume();
-            // Sync checkbox state if changed from MainActivity
-            android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
+
             SettingsManager settingsManager = new SettingsManager(this);
-            boolean enabled = settingsManager.getBoolean("pref_service_enabled", true);
-            if (servicePref != null) servicePref.setChecked(enabled);
+
+            // ✅ Check ACTUAL service state (not just SharedPreferences)
+            boolean isServiceActuallyRunning = isServiceRunning();
+            android.util.Log.d("SettingsActivity", "onResume() - Service actually running: " + isServiceActuallyRunning);
+
+            // Sync "Enable Service" checkbox with actual service state
+            android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
+            if (servicePref != null) {
+                servicePref.setChecked(isServiceActuallyRunning);
+
+                // Also update SharedPreferences to match reality if they differ
+                boolean prefValue = settingsManager.getBoolean("pref_service_enabled", false);
+                if (isServiceActuallyRunning != prefValue) {
+                    android.util.Log.d("SettingsActivity", "Syncing pref_service_enabled with actual service state: " + isServiceActuallyRunning);
+                    settingsManager.setBoolean("pref_service_enabled", isServiceActuallyRunning);
+                }
+            }
 
             // Sync notification checkbox state
             android.preference.CheckBoxPreference notifPref = (android.preference.CheckBoxPreference) findPreference("pref_notifications_enabled_notif");

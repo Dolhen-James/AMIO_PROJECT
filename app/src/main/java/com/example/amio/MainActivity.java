@@ -1,6 +1,7 @@
 package com.example.amio;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -25,20 +26,17 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * MainActivity - Main UI for the AMIO Light Detection application
+ * MainActivity - L'affichage principal (page 1)
  *
  * Features:
- * - Toggle button to start/stop MainService
+ * - Toggle button to start/stop MainService (TP1)
  * - Display service status (running/stopped)
  * - Show last check timestamp
  * - Display sensor data (TP2)
- * - Request notification permission on Android 13+ (TP2/TP3)
+ * - Request notification (TP2/TP3)
  *
- * TP1: Basic service control and status display
- * TP2: Display sensor count and lights on count
- * TP3: BroadcastReceiver for service communication
  */
-public class MainActivity extends AppCompatActivity implements ServiceBroadcastCallback {
+public class MainActivity extends AppCompatActivity implements ServiceBroadcastCallback { // On utilise AppCompatActivity pour raisons de compatibilité (avec la toolbar)
 
     /**
      * Call this function whenever the service is activated (main menu, settings, boot).
@@ -49,6 +47,8 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         SharedPreferences prefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
         prefs.edit().putBoolean("pref_service_enabled", true).apply();
 
+        // Il sera important de vérifier si on a une instance de l'activité ou pas (e.g au moment du boot le service est actif, tentera de communiquer avec l'UI mais l'UI n'est pas encore instancié)
+
         // If MainActivity is visible, update service status UI
         if (context instanceof MainActivity) {
             MainActivity activity = (MainActivity) context;
@@ -56,16 +56,9 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
             activity.updateServiceStatus();
         }
 
-        // If SettingsActivity is visible, update checkbox UI
-        if (context instanceof SettingsActivity) {
-            SettingsActivity settingsActivity = (SettingsActivity) context;
-            android.preference.CheckBoxPreference servicePref =
-                (android.preference.CheckBoxPreference) settingsActivity.findPreference("pref_service_enabled");
-            if (servicePref != null) servicePref.setChecked(true);
-        }
     }
-    // ...existing code...
-    // Implement ServiceBroadcastCallback to decouple receiver from activity
+
+    // Ceci permet de découpler le BroadcastReceiver de l'activité principale pour continuer à maintenir le service même si l'UI n'est pas active
     // @Override
     public void onServiceBroadcast(String status, long timestamp, int sensorCount, int lightsOnCount, String sensorDataJson, String fetchErrorsJson) {
         updateLastCheck(timestamp);
@@ -101,20 +94,15 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         // Request notification permission for Android 13+ (API 33+) using helper
         NotificationHelper.requestNotificationPermission(this);
 
-        // Initialize UI elements
+        // Setup initial
         initializeViews();
-
-        // Set up the toggle button
         setupToggleButton();
-
-        // Check if service is already running
         updateServiceStatus();
-
-        // Set up BroadcastReceiver for service updates
         setupBroadcastReceiver();
     }
 
 
+    // Pour les notifications
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -131,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         tvSensorData = findViewById(R.id.tvSensorData);
 
         // Initialize sensor data display
-    tvSensorData.setText(getString(R.string.sensor_no_data));
+        // Les strings sont stockés dans res/values/strings.xml pour centralisation
+        tvSensorData.setText(getString(R.string.sensor_no_data));
         Log.d(TAG, "UI elements initialized - tvSensorData is " + (tvSensorData != null ? "NOT NULL" : "NULL"));
 
     }
@@ -143,7 +132,8 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         btnToggleService.setOnClickListener(v -> {
             if (isServiceRunning) {
                 stopService();
-            } else {
+            }
+            else {
                 startService();
             }
         });
@@ -152,10 +142,10 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     /**
      * Set up BroadcastReceiver to listen for updates from MainService (TP3)
      */
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void setupBroadcastReceiver() {
-    serviceReceiver = new ServiceBroadcastReceiver(this);
-    // Use callback interface for decoupling
-    serviceReceiver = new ServiceBroadcastReceiver(this);
+        // Use callback interface for decoupling
+        serviceReceiver = new ServiceBroadcastReceiver(this);
 
         // Register receiver with IntentFilter
         IntentFilter filter = new IntentFilter(MainService.ACTION_RESULT);
@@ -174,18 +164,18 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     /**
      * Start the MainService
      */
-private void startService() {
-    Log.d(TAG, "Starting MainService");
-    Intent intent = new Intent(this, MainService.class);
-    startService(intent);
+    private void startService() {
+        Log.d(TAG, "Starting MainService");
+        Intent intent = new Intent(this, MainService.class);
+        startService(intent);
 
-    // Unified UI update
-    updateServiceUI(this);
+        // Unified UI update
+        updateServiceUI(this);
 
-    // Update SharedPreferences so SettingsActivity reflects the change
-    SettingsManager settingsManager = new SettingsManager(this);
-    settingsManager.setBoolean("pref_service_enabled", true);
-}
+        // Update SharedPreferences so SettingsActivity reflects the change
+        SettingsManager settingsManager = new SettingsManager(this);
+        settingsManager.setBoolean("pref_service_enabled", true);
+    }
 
     /**
      * Stop the MainService
@@ -196,38 +186,41 @@ private void startService() {
         stopService(intent);
         updateServiceStatus();
 
-            // Update SharedPreferences so SettingsActivity reflects the change
-            SettingsManager settingsManager = new SettingsManager(this);
-            settingsManager.setBoolean("pref_service_enabled", false);
+        // Update SharedPreferences so SettingsActivity reflects the change
+        SettingsManager settingsManager = new SettingsManager(this);
+        settingsManager.setBoolean("pref_service_enabled", false);
     }
 
     /**
      * Check if MainService is currently running and update UI accordingly
      */
-private void updateServiceStatus() {
-    isServiceRunning = isServiceRunning(MainService.class);
+    private void updateServiceStatus() {
+        // Les strings sont stockés dans res/values/strings.xml pour faciliter la traduction
+        isServiceRunning = isServiceRunning(MainService.class);
 
-    if (isServiceRunning) {
-        btnToggleService.setText(getString(R.string.toggle_stop_service));
-        tvServiceStatus.setText(getString(R.string.service_status_running));
-        tvServiceStatus.setTextColor(getResources().getColor(R.color.service_running));
-    } else {
-        btnToggleService.setText(getString(R.string.toggle_start_service));
-        tvServiceStatus.setText(getString(R.string.service_status_stopped));
-        tvServiceStatus.setTextColor(getResources().getColor(R.color.service_stopped));
+        if (isServiceRunning) {
+            btnToggleService.setText(getString(R.string.toggle_stop_service));
+            tvServiceStatus.setText(getString(R.string.service_status_running));
+            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_running));
+        } else {
+            btnToggleService.setText(getString(R.string.toggle_start_service));
+            tvServiceStatus.setText(getString(R.string.service_status_stopped));
+            tvServiceStatus.setTextColor(getResources().getColor(R.color.service_stopped));
+        }
+
+        // Update "start on boot" status
+        TextView tvBootStatus = findViewById(R.id.tvBootStatus);
+        android.content.SharedPreferences bootPrefs = getSharedPreferences("amio_prefs", MODE_PRIVATE);
+        boolean startOnBoot = bootPrefs.getBoolean("start_service_on_boot", false);
+        if (tvBootStatus != null) {
+            tvBootStatus.setText(startOnBoot ? "true" : "false");
+        }
+
+        Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped") +
+                ", start on boot: " + startOnBoot);
+
+
     }
-
-    // Update "start on boot" status
-    TextView tvBootStatus = findViewById(R.id.tvBootStatus);
-    android.content.SharedPreferences bootPrefs = getSharedPreferences("amio_prefs", MODE_PRIVATE);
-    boolean startOnBoot = bootPrefs.getBoolean("start_service_on_boot", false);
-    if (tvBootStatus != null) {
-        tvBootStatus.setText(startOnBoot ? "true" : "false");
-    }
-
-    Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped") +
-            ", start on boot: " + startOnBoot);
-}
 
     /**
      * Update the last check timestamp display
@@ -238,6 +231,7 @@ private void updateServiceStatus() {
         if (timestamp > 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
             String time = sdf.format(new Date(timestamp));
+
             tvLastCheck.setText(time);
         }
     }
@@ -261,9 +255,13 @@ private void updateServiceStatus() {
         // Parse fetch errors if present
         java.util.List<String> fetchErrors = new java.util.ArrayList<>();
         if (fetchErrorsJson != null && !fetchErrorsJson.isEmpty()) {
+
             try {
+                // JSONArray errorsArray = new org.json.JSONArray(fetchErrorsJson);
+
                 org.json.JSONArray errorsArray = new org.json.JSONArray(fetchErrorsJson);
-                Log.d(TAG, "Parsing " + errorsArray.length() + " fetch errors");
+
+                //Log.d(TAG, "Parsing " + errorsArray.length() + " fetch errors");
                 for (int i = 0; i < errorsArray.length(); i++) {
                     String error = errorsArray.getString(i);
                     fetchErrors.add(error);
@@ -276,10 +274,11 @@ private void updateServiceStatus() {
             Log.d(TAG, "No fetch errors JSON received");
         }
 
-        Log.d(TAG, "Total fetch errors parsed: " + fetchErrors.size());
+        //Log.d(TAG, "Total fetch errors parsed: " + fetchErrors.size());
         sb.append(SensorDataHelper.formatSensorSummary(sensorCount, lightsOnCount, status, fetchErrors));
 
         try {
+
             java.util.List<SensorDataHelper.SensorInfo> sensors = SensorDataHelper.parseSensorData(sensorDataJson);
             sb.append(SensorDataHelper.formatSensorDetails(sensors));
         } catch (org.json.JSONException e) {
@@ -293,7 +292,7 @@ private void updateServiceStatus() {
 
         tvSensorData.setText(finalText);
 
-        // Change text color based on lights detected
+        // On met le texte en orange si des lumières sont détectées, pour un max de fun youpi youpla
         if (lightsOnCount > 0) {
             tvSensorData.setTextColor(getResources().getColor(R.color.sensor_lights_detected));
         } else {
@@ -301,6 +300,8 @@ private void updateServiceStatus() {
         }
 
         Log.d(TAG, "updateSensorData() completed successfully");
+
+
     }
 
     /**
@@ -309,7 +310,7 @@ private void updateServiceStatus() {
      * @param serviceClass The service class to check
      * @return true if service is running, false otherwise
      */
-    private boolean isServiceRunning(Class<?> serviceClass) {
+    private boolean isServiceRunning(Class<?> serviceClass) { // Sera utilisé pour check MainService.class
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (manager != null) {
             for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -324,7 +325,7 @@ private void updateServiceStatus() {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume() called - MainActivity is now visible");
+        //Log.d(TAG, "onResume() called - MainActivity is now visible");
         // Update service status when activity resumes
         updateServiceStatus();
 

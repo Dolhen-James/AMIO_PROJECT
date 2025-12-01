@@ -11,7 +11,6 @@ import android.util.Log;
  * 
  * Automatically starts MainService when device boots, if enabled in preferences.
  * 
- * TP3: Boot receiver implementation
  * Requires RECEIVE_BOOT_COMPLETED permission in AndroidManifest.xml
  */
 public class MyBootBroadcastReceiver extends BroadcastReceiver {
