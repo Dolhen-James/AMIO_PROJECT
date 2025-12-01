@@ -67,9 +67,9 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     // ...existing code...
     // Implement ServiceBroadcastCallback to decouple receiver from activity
     // @Override
-    public void onServiceBroadcast(String status, long timestamp, int sensorCount, int lightsOnCount, String sensorDataJson) {
+    public void onServiceBroadcast(String status, long timestamp, int sensorCount, int lightsOnCount, String sensorDataJson, String fetchErrorsJson) {
         updateLastCheck(timestamp);
-        updateSensorData(sensorCount, lightsOnCount, status, sensorDataJson);
+        updateSensorData(sensorCount, lightsOnCount, status, sensorDataJson, fetchErrorsJson);
     }
 
     private static final String TAG = "MainActivity";
@@ -250,12 +250,34 @@ private void updateServiceStatus() {
      * @param status Status message from service
      * @param sensorDataJson JSON string containing detailed sensor information
      */
-    public void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson) {
+    public void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson, String fetchErrorsJson) {
         Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
-                ", lightsOnCount=" + lightsOnCount + ", status=" + status);
+                ", lightsOnCount=" + lightsOnCount + ", status=" + status +
+                ", has_errors=" + (fetchErrorsJson != null) +
+                ", errorJson=" + fetchErrorsJson);
 
         StringBuilder sb = new StringBuilder();
-        sb.append(SensorDataHelper.formatSensorSummary(sensorCount, lightsOnCount, status));
+
+        // Parse fetch errors if present
+        java.util.List<String> fetchErrors = new java.util.ArrayList<>();
+        if (fetchErrorsJson != null && !fetchErrorsJson.isEmpty()) {
+            try {
+                org.json.JSONArray errorsArray = new org.json.JSONArray(fetchErrorsJson);
+                Log.d(TAG, "Parsing " + errorsArray.length() + " fetch errors");
+                for (int i = 0; i < errorsArray.length(); i++) {
+                    String error = errorsArray.getString(i);
+                    fetchErrors.add(error);
+                    Log.d(TAG, "Error " + i + ": " + error);
+                }
+            } catch (org.json.JSONException e) {
+                Log.e(TAG, "Error parsing fetch errors JSON", e);
+            }
+        } else {
+            Log.d(TAG, "No fetch errors JSON received");
+        }
+
+        Log.d(TAG, "Total fetch errors parsed: " + fetchErrors.size());
+        sb.append(SensorDataHelper.formatSensorSummary(sensorCount, lightsOnCount, status, fetchErrors));
 
         try {
             java.util.List<SensorDataHelper.SensorInfo> sensors = SensorDataHelper.parseSensorData(sensorDataJson);

@@ -58,9 +58,12 @@ public class EmailNotificationService {
      */
     public void sendGroupedEmailNotification(List<String> motesOn, List<String> motesOff) {
         Log.d(TAG, "sendGroupedEmailNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
+        Log.d(TAG, "Motes ON: " + motesOn);
+        Log.d(TAG, "Motes OFF: " + motesOff);
 
         // Check if email notifications are enabled in preferences
         boolean emailEnabled = prefs.getBoolean("pref_email_notifications_enabled", false);
+        Log.d(TAG, "Email notifications enabled in prefs: " + emailEnabled);
         if (!emailEnabled) {
             Log.d(TAG, "Email notifications disabled in preferences - skipping email");
             return;

@@ -1,7 +1,6 @@
 package com.example.amio;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
@@ -46,6 +45,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     public static final String EXTRA_SENSOR_COUNT = "sensor_count";
     public static final String EXTRA_LIGHTS_ON_COUNT = "lights_on_count";
     public static final String EXTRA_SENSOR_DETAILS = "sensor_details";
+    public static final String EXTRA_FETCH_ERRORS = "fetch_errors";
 
     // Timer for periodic task execution
     private Timer timer;
@@ -57,11 +57,15 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     // Fetch interval in milliseconds (dynamic)
     private long fetchIntervalMs = 5000;
 
-    // Sensor state tracking - thread-safe map
-    private final ConcurrentHashMap<String, SensorState> sensorStates = new ConcurrentHashMap<>();
+    // Light-Mote state tracking - thread-safe map
+    // Key format: "light1_9.138" (lightLabel_moteId)
+    private final ConcurrentHashMap<String, LightMoteState> lightMoteStates = new ConcurrentHashMap<>();
+
+    // List of lights to monitor
+    private static final String[] LIGHT_LABELS = {"light1", "light2"};
 
     // Light detection threshold (calibration value)
-    private double lightThreshold = SensorState.DEFAULT_LIGHT_THRESHOLD;
+    private double lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
 
     // Notification helper for all notification-related operations
     private NotificationHelper notificationHelper;
@@ -84,12 +88,12 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         // Read threshold from preferences (with default)
         try {
             lightThreshold = Double.parseDouble(
-                prefs.getString("light_threshold", String.valueOf(SensorState.DEFAULT_LIGHT_THRESHOLD))
+                prefs.getString("light_threshold", String.valueOf(LightMoteState.DEFAULT_LIGHT_THRESHOLD))
             );
             Log.d(TAG, "onCreate() - Light threshold: " + lightThreshold);
         } catch (Exception e) {
             Log.w(TAG, "Invalid threshold in preferences, using default", e);
-            lightThreshold = SensorState.DEFAULT_LIGHT_THRESHOLD;
+            lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
         }
 
         // Initialize notification helper
@@ -148,46 +152,85 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     }
 
     private void fetchDataFromServer() {
-        Log.d(TAG, "Fetching data from server...");
+        Log.d(TAG, "Fetching data from server for all lights...");
 
-        String urlStr = prefs.getString("server_url", "http://37.59.110.9:8000/AMIO-API");
+        String baseUrl = prefs.getString("server_url", "http://peniche.pakbo-et-lombrik.fr:8000");
 
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+        // Track changes across all lights for grouped notification
+        List<String> allMotesJustTurnedOn = new ArrayList<>();
+        List<String> allMotesJustTurnedOff = new ArrayList<>();
 
-            Log.d(TAG, "Fetching from URL: " + urlStr);
+        // Track fetch errors
+        List<String> fetchErrors = new ArrayList<>();
+        int successfulFetches = 0;
 
-            int responseCode = conn.getResponseCode();
-            Log.d(TAG, "HTTP Response Code: " + responseCode);
+        // Fetch data for each light
+        for (String lightLabel : LIGHT_LABELS) {
+            String urlStr = baseUrl + "/iotlab/rest/data/1/" + lightLabel + "/last";
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                InputStream inputStream = conn.getInputStream();
-                String jsonResponse = convertStreamToString(inputStream);
-                inputStream.close();
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(urlStr);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
-                Log.d(TAG, "JSON Response: " + jsonResponse);
+                Log.d(TAG, "Fetching " + lightLabel + " from URL: " + urlStr);
 
-                parseJsonAndUpdateStates(jsonResponse);
-                broadcastResult("Data fetched successfully", jsonResponse);
+                int responseCode = conn.getResponseCode();
+                Log.d(TAG, lightLabel + " - HTTP Response Code: " + responseCode);
 
-            } else {
-                Log.e(TAG, "HTTP request failed with code: " + responseCode);
-                broadcastResult("HTTP Error: " + responseCode, null);
-            }
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    InputStream inputStream = conn.getInputStream();
+                    String jsonResponse = convertStreamToString(inputStream);
+                    inputStream.close();
 
-        } catch (Exception e) {
-            Log.e(TAG, "Error fetching data from server", e);
-            broadcastResult("Fetch error: " + e.getMessage(), null);
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
+                    Log.d(TAG, lightLabel + " - JSON Response: " + jsonResponse);
+
+                    // Parse and update states for this light
+                    parseJsonForLight(lightLabel, jsonResponse, allMotesJustTurnedOn, allMotesJustTurnedOff);
+                    successfulFetches++;
+
+                } else {
+                    Log.e(TAG, lightLabel + " - HTTP request failed with code: " + responseCode);
+                    fetchErrors.add(lightLabel + " (HTTP " + responseCode + ")");
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching data for " + lightLabel, e);
+                String errorMsg = e.getMessage();
+                if (errorMsg == null || errorMsg.isEmpty()) {
+                    errorMsg = e.getClass().getSimpleName();
+                }
+                fetchErrors.add(lightLabel + " (" + errorMsg + ")");
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
             }
         }
+
+        // Send grouped notification if there are changes
+        if (!allMotesJustTurnedOn.isEmpty() || !allMotesJustTurnedOff.isEmpty()) {
+            notificationHelper.sendGroupedNotification(allMotesJustTurnedOn, allMotesJustTurnedOff);
+        }
+
+        // Broadcast results to UI with error information
+        String status;
+        if (fetchErrors.isEmpty()) {
+            status = "Data fetched successfully";
+            Log.d(TAG, "All fetches successful - no errors");
+        } else if (successfulFetches == 0) {
+            status = "Failed to fetch data";
+            Log.e(TAG, "All fetches failed - " + fetchErrors.size() + " errors");
+        } else {
+            status = "Partial fetch (" + successfulFetches + "/" + LIGHT_LABELS.length + " successful)";
+            Log.w(TAG, "Partial success - " + successfulFetches + " succeeded, " + fetchErrors.size() + " failed");
+        }
+
+        Log.d(TAG, "Fetch complete - Status: " + status + ", Errors: " + fetchErrors);
+        broadcastResultWithErrors(status, null, fetchErrors);
     }
 
     private String convertStreamToString(InputStream is) throws Exception {
@@ -201,16 +244,21 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         return sb.toString();
     }
 
-    private void parseJsonAndUpdateStates(String jsonResponse) {
+    /**
+     * Parse JSON data for a specific light and update states
+     * @param lightLabel The light being monitored (e.g., "light1")
+     * @param jsonResponse The JSON response for this light
+     * @param motesJustTurnedOn List to accumulate motes that turned on
+     * @param motesJustTurnedOff List to accumulate motes that turned off
+     */
+    private void parseJsonForLight(String lightLabel, String jsonResponse,
+                                   List<String> motesJustTurnedOn,
+                                   List<String> motesJustTurnedOff) {
         try {
             JSONObject rootObject = new JSONObject(jsonResponse);
             JSONArray dataArray = rootObject.getJSONArray("data");
 
-            Log.d(TAG, "Parsing " + dataArray.length() + " sensor entries");
-
-            // Track changes for grouped notification
-            List<String> motesJustTurnedOn = new ArrayList<>();
-            List<String> motesJustTurnedOff = new ArrayList<>();
+            Log.d(TAG, "Parsing " + dataArray.length() + " mote entries for " + lightLabel);
 
             for (int i = 0; i < dataArray.length(); i++) {
                 JSONObject item = dataArray.getJSONObject(i);
@@ -218,53 +266,50 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                 long timestamp = item.optLong("timestamp", 0L);
                 String label = item.optString("label", "unknown");
                 double value = item.optDouble("value", Double.NaN);
-                String mote = item.optString("mote", "unknown");
+                String moteId = item.optString("mote", "unknown");
 
-                if (Double.isNaN(value) || mote.equals("unknown")) {
-                    Log.w(TAG, "Skipping invalid sensor entry");
+                if (Double.isNaN(value) || moteId.equals("unknown")) {
+                    Log.w(TAG, "Skipping invalid mote entry");
                     continue;
                 }
 
-                SensorState existingState = sensorStates.get(mote);
+                // Create unique key for this light-mote combination
+                String uniqueKey = LightMoteState.createKey(lightLabel, moteId);
+
+                LightMoteState existingState = lightMoteStates.get(uniqueKey);
 
                 if (existingState == null) {
-                    SensorState newState = new SensorState(mote, label, value, timestamp);
-                    sensorStates.put(mote, newState);
+                    // New light-mote combination detected
+                    LightMoteState newState = new LightMoteState(lightLabel, moteId, value, timestamp);
+                    lightMoteStates.put(uniqueKey, newState);
 
                     if (newState.isLightOn()) {
-                        Log.i(TAG, "New sensor detected with light ON: " + mote + " (value=" + value + ")");
-                        motesJustTurnedOn.add(mote);
+                        Log.i(TAG, "New mote detected with light ON: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                        motesJustTurnedOn.add(lightLabel + " - Mote " + moteId);
                     }
                 } else {
+                    // Update existing state
                     boolean wasOn = existingState.isLightOn();
-
-                    // Update the state first
-                    existingState.updateState(value, timestamp, lightThreshold);
-
+                    boolean statusChanged = existingState.updateState(value, timestamp, lightThreshold);
                     boolean isNowOn = existingState.isLightOn();
 
                     // Detect changes
-                    if (!wasOn && isNowOn) {
-                        Log.i(TAG, "Light turned ON: " + mote + " (value=" + value + ")");
-                        motesJustTurnedOn.add(mote);
-                    } else if (wasOn && !isNowOn) {
-                        Log.i(TAG, "Light turned OFF: " + mote + " (value=" + value + ")");
-                        motesJustTurnedOff.add(mote);
+                    if (statusChanged) {
+                        if (!wasOn && isNowOn) {
+                            Log.i(TAG, "Light turned ON: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                            motesJustTurnedOn.add(lightLabel + " - Mote " + moteId);
+                        } else if (wasOn && !isNowOn) {
+                            Log.i(TAG, "Light turned OFF: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                            motesJustTurnedOff.add(lightLabel + " - Mote " + moteId);
+                        }
                     }
                 }
             }
 
-            // Send grouped notification if there are changes
-            if (!motesJustTurnedOn.isEmpty() || !motesJustTurnedOff.isEmpty()) {
-                notificationHelper.sendGroupedNotification(motesJustTurnedOn, motesJustTurnedOff);
-            }
-
-            Log.d(TAG, "Parsing complete. Total sensors tracked: " + sensorStates.size() +
-                       ", Turned ON: " + motesJustTurnedOn.size() +
-                       ", Turned OFF: " + motesJustTurnedOff.size());
+            Log.d(TAG, "Parsing complete for " + lightLabel + ". Total light-mote combinations tracked: " + lightMoteStates.size());
 
         } catch (JSONException e) {
-            Log.e(TAG, "Error parsing JSON", e);
+            Log.e(TAG, "Error parsing JSON for " + lightLabel, e);
         }
     }
 
@@ -277,10 +322,10 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         intent.putExtra(EXTRA_STATUS, status);
         intent.putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis());
-        intent.putExtra(EXTRA_SENSOR_COUNT, sensorStates.size());
+        intent.putExtra(EXTRA_SENSOR_COUNT, lightMoteStates.size());
 
         int lightsOnCount = 0;
-        for (SensorState state : sensorStates.values()) {
+        for (LightMoteState state : lightMoteStates.values()) {
             if (state.isLightOn()) {
                 lightsOnCount++;
             }
@@ -293,11 +338,11 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         try {
             JSONArray sensorDetailsArray = new JSONArray();
-            for (SensorState state : sensorStates.values()) {
+            for (LightMoteState state : lightMoteStates.values()) {
                 JSONObject sensorObject = new JSONObject();
-                sensorObject.put("mote", state.getMote());
-                sensorObject.put("label", state.getLabel());
-                sensorObject.put("value", state.getValue());
+                sensorObject.put("light", state.getLightLabel());
+                sensorObject.put("mote", state.getMoteId());
+                sensorObject.put("value", state.getCurrentValue());
                 sensorObject.put("timestamp", state.getLastUpdated());
                 sensorObject.put("lightOn", state.isLightOn());
                 sensorDetailsArray.put(sensorObject);
@@ -313,11 +358,82 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         }
 
         sendBroadcast(intent);
-        Log.d(TAG, "Broadcast sent - sensors=" + sensorStates.size() + ", lights_on=" + lightsOnCount);
+        Log.d(TAG, "Broadcast sent - light-mote combinations=" + lightMoteStates.size() + ", lights_on=" + lightsOnCount);
     }
 
-    public Map<String, SensorState> getSensorStates() {
-        return new ConcurrentHashMap<>(sensorStates);
+    /**
+     * Broadcast service results with fetch error information to MainActivity
+     */
+    private void broadcastResultWithErrors(String status, String jsonData, List<String> fetchErrors) {
+        Log.d(TAG, "broadcastResultWithErrors() called - status: " + status + ", errors: " + (fetchErrors != null ? fetchErrors.size() : "null"));
+
+        if (fetchErrors != null && !fetchErrors.isEmpty()) {
+            Log.d(TAG, "Errors to broadcast: " + fetchErrors);
+        }
+
+        Intent intent = new Intent(ACTION_RESULT);
+        intent.setPackage(getPackageName());
+
+        intent.putExtra(EXTRA_STATUS, status);
+        intent.putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis());
+        intent.putExtra(EXTRA_SENSOR_COUNT, lightMoteStates.size());
+
+        int lightsOnCount = 0;
+        for (LightMoteState state : lightMoteStates.values()) {
+            if (state.isLightOn()) {
+                lightsOnCount++;
+            }
+        }
+        intent.putExtra(EXTRA_LIGHTS_ON_COUNT, lightsOnCount);
+
+        if (jsonData != null) {
+            intent.putExtra(EXTRA_DATA, jsonData);
+        }
+
+        // Add fetch errors as JSON array
+        if (fetchErrors != null && !fetchErrors.isEmpty()) {
+            try {
+                JSONArray errorsArray = new JSONArray();
+                for (String error : fetchErrors) {
+                    errorsArray.put(error);
+                }
+                String errorsJson = errorsArray.toString();
+                intent.putExtra(EXTRA_FETCH_ERRORS, errorsJson);
+                Log.d(TAG, "Added fetch errors to intent: " + errorsJson);
+            } catch (Exception e) {
+                Log.e(TAG, "Error building fetch errors JSON", e);
+            }
+        } else {
+            Log.d(TAG, "No fetch errors to broadcast");
+        }
+
+        try {
+            JSONArray sensorDetailsArray = new JSONArray();
+            for (LightMoteState state : lightMoteStates.values()) {
+                JSONObject sensorObject = new JSONObject();
+                sensorObject.put("light", state.getLightLabel());
+                sensorObject.put("mote", state.getMoteId());
+                sensorObject.put("value", state.getCurrentValue());
+                sensorObject.put("timestamp", state.getLastUpdated());
+                sensorObject.put("lightOn", state.isLightOn());
+                sensorDetailsArray.put(sensorObject);
+            }
+
+            String sensorDetailsJson = sensorDetailsArray.toString();
+            intent.putExtra(EXTRA_SENSOR_DETAILS, sensorDetailsJson);
+
+            Log.d(TAG, "Sensor details JSON length: " + sensorDetailsJson.length());
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building sensor details JSON", e);
+            intent.putExtra(EXTRA_SENSOR_DETAILS, "[]");
+        }
+
+        sendBroadcast(intent);
+        Log.d(TAG, "Broadcast sent with errors - light-mote combinations=" + lightMoteStates.size() + ", lights_on=" + lightsOnCount + ", errors=" + fetchErrors.size());
+    }
+
+    public Map<String, LightMoteState> getLightMoteStates() {
+        return new ConcurrentHashMap<>(lightMoteStates);
     }
 
     @Override
@@ -326,7 +442,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
         if (intent != null && ACTION_REQUEST_UPDATE.equals(intent.getAction())) {
             Log.d(TAG, "Received request for immediate update");
-            broadcastResult("Current state", null);
+            broadcastResultWithErrors("Current state", null, new ArrayList<>());
         }
 
         Log.i(TAG, "onStartCommand() - Returning START_STICKY to ensure service restarts after kill");

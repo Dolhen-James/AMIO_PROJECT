@@ -26,10 +26,12 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
             int sensorCount = intent.getIntExtra(MainService.EXTRA_SENSOR_COUNT, 0);
             int lightsOnCount = intent.getIntExtra(MainService.EXTRA_LIGHTS_ON_COUNT, 0);
             String sensorDataJson = intent.getStringExtra(MainService.EXTRA_SENSOR_DETAILS);
+            String fetchErrorsJson = intent.getStringExtra(MainService.EXTRA_FETCH_ERRORS);
 
             Log.d(TAG, "Received broadcast - status: " + status +
                     ", sensors: " + sensorCount +
-                    ", lights_on: " + lightsOnCount);
+                    ", lights_on: " + lightsOnCount +
+                    ", has_errors: " + (fetchErrorsJson != null));
             Log.d(TAG, "Sensor JSON length: " + (sensorDataJson != null ? sensorDataJson.length() : "null"));
             if (sensorDataJson != null && sensorDataJson.length() < 500) {
                 Log.d(TAG, "Sensor JSON: " + sensorDataJson);
@@ -37,7 +39,7 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
 
             // Notify callback
             if (callback != null) {
-                callback.onServiceBroadcast(status, timestamp, sensorCount, lightsOnCount, sensorDataJson);
+                callback.onServiceBroadcast(status, timestamp, sensorCount, lightsOnCount, sensorDataJson, fetchErrorsJson);
             }
 
             Log.d(TAG, "Callback notified");
