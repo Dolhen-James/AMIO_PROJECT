@@ -17,6 +17,9 @@ L'application permet d'afficher en temps réel l'état de motes IoT (capteurs) e
 
 ![general app view](resources/sensors.png)
 
+![general app view](resources/errors.png)
+
+
 
 #### Description
 L'application affiche en direct l'état des motes IoT récupérées depuis un serveur API. Lorsque le service est activé, l'application effectue des appels périodiques à l'API pour récupérer les données des capteurs et met à jour l'interface utilisateur en temps réel.
@@ -40,32 +43,17 @@ L'application affiche en direct l'état des motes IoT récupérées depuis un se
     - `startPeriodicFetch()` : Configure le timer pour les appels périodiques
     - `broadcastSensorState(SensorState state)` : Diffuse les données aux composants intéressés
 
-**`SensorFetchManager.java`**
-- Gestionnaire des appels réseau vers l'API
-- Fonctions principales :
-    - `fetchSensorData(String serverUrl, FetchCallback callback)` : Effectue la requête HTTP GET vers le serveur
-    - Interface `FetchCallback` : Gère les réponses (succès ou erreur)
 
-**`SensorState.java`**
+**`LightMoteState.java`**
 - Modèle de données représentant l'état d'un capteur
 - Contient les informations : `moteid`, `state`, `timestamp`
 - Fonctions principales :
     - `fromJson(String json)` : Parse les données JSON de l'API
     - `toJson()` : Sérialise l'état en JSON
 
-**`SensorDataHelper.java`**
-- Classe utilitaire pour la gestion des données des capteurs
-- Fonctions principales :
-    - `saveSensorState(Context, SensorState)` : Sauvegarde l'état actuel
-    - `loadSensorState(Context)` : Charge le dernier état sauvegardé
-    - `hasStateChanged(SensorState, SensorState)` : Détecte les changements d'état
-
 **`ServiceBroadcastReceiver.java`**
 - Récepteur des broadcasts du service
 - Permet la communication entre le service et l'activité principale
-
-
-
 ---
 
 ### 2. Page de Settings et Stockage des Données
@@ -206,9 +194,6 @@ L'application permet de configurer dynamiquement l'URL du serveur API depuis leq
 - Lit l'URL configurée depuis les SharedPreferences
 - Utilise cette URL pour les appels API via `SensorFetchManager`
 
-**`SensorFetchManager.java`**
-- Effectue les requêtes HTTP vers l'URL configurée
-- Gère les erreurs de connexion et les timeouts
 
 #### MockAPI
 
@@ -238,6 +223,12 @@ L'utilisateur peut activer dans les paramètres l'option qui permet de démarrer
 ##### `ServiceBroadcastCallback.java`
 - Interface callback pour la communication entre composants
 - Permet de notifier les changements d'état aux activités
+
+---
+
+## Services tiers
+
+Le code du système web qui gère les envois de mail et le mock api est dans "service_tiers", pour lancer le système il suffit de `docker compose up` dedans.
 
 ---
 
