@@ -275,12 +275,11 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         }
 
         //Log.d(TAG, "Total fetch errors parsed: " + fetchErrors.size());
-        sb.append(SensorDataHelper.formatSensorSummary(sensorCount, lightsOnCount, status, fetchErrors));
+        sb.append(LightMoteState.formatSummary(lightsOnCount, status, fetchErrors));
 
         try {
-
-            java.util.List<SensorDataHelper.SensorInfo> sensors = SensorDataHelper.parseSensorData(sensorDataJson);
-            sb.append(SensorDataHelper.formatSensorDetails(sensors));
+            java.util.List<LightMoteState> sensors = LightMoteState.parseFromJson(sensorDataJson);
+            sb.append(LightMoteState.formatDetails(sensors));
         } catch (org.json.JSONException e) {
             Log.e(TAG, "Error parsing sensor details JSON", e);
             sb.append("\n⚠️ Error parsing sensor details\n");

@@ -61,8 +61,6 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     // List of lights to monitor
     private static final String[] LIGHT_LABELS = {"light1", "light2"};
 
-    // Light detection threshold (calibration value, used only at startup of the service)
-    private double lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
 
     // Notification helper for all notification-related operations
     private NotificationHelper notificationHelper;
@@ -82,16 +80,6 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         fetchIntervalMs = getPollingIntervalMs();
         //Log.d(TAG, "onCreate() - Polling interval: " + fetchIntervalMs + " ms");
 
-        // Read threshold from preferences (with default)
-        try {
-            lightThreshold = Double.parseDouble(
-                prefs.getString("light_threshold", String.valueOf(LightMoteState.DEFAULT_LIGHT_THRESHOLD))
-            );
-            Log.d(TAG, "onCreate() - Light threshold: " + lightThreshold);
-        } catch (Exception e) {
-            Log.w(TAG, "Invalid threshold in preferences, using default", e);
-            lightThreshold = LightMoteState.DEFAULT_LIGHT_THRESHOLD;
-        }
 
         // Initialize notification helper (for push notifications)
         notificationHelper = new NotificationHelper(this);
@@ -283,6 +271,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                     LightMoteState newState = new LightMoteState(lightLabel, moteId, value, timestamp);
                     lightMoteStates.put(uniqueKey, newState);
 
+
                     if (newState.isLightOn()) {
                         Log.i(TAG, "New mote detected with light ON: " + lightLabel + " - " + moteId + " (value=" + value + ")");
                         motesJustTurnedOn.add(lightLabel + " - Mote " + moteId);
@@ -290,8 +279,14 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                 } else {
                     // Update existing state
                     boolean wasOn = existingState.isLightOn();
-                    boolean statusChanged = existingState.updateState(value, timestamp, lightThreshold);
+                    double prevValue = existingState.getCurrentValue();
+                    boolean statusChanged = existingState.updateState(value, timestamp);
                     boolean isNowOn = existingState.isLightOn();
+
+                    Log.d(TAG, "Update mote: " + lightLabel + " - " + moteId +
+                            " | prev=" + prevValue + " | new=" + value +
+                            " | wasOn=" + wasOn + " | isNowOn=" + isNowOn +
+                            " | changed=" + statusChanged);
 
                     // Detect changes
                     if (statusChanged) {

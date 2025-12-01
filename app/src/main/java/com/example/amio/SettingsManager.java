@@ -3,6 +3,11 @@ package com.example.amio;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+/**
+ * SettingsManager - A utility class for managing application settings using SharedPreferences.
+ *
+ * Provides methods to save and retrieve various types of settings.
+ */
 public class SettingsManager {
     private static final String PREF_NAME = "amio_settings";
     private SharedPreferences sharedPreferences;

@@ -7,6 +7,12 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TimePicker;
 
+/**
+ * TimeRangePreference - A custom DialogPreference for selecting a time range.
+ *
+ * Allows users to select a start and end time using TimePickers.
+ * Saves the selected time range in the format "HH:MM-HH:MM" to SharedPreferences.
+ */
 public class TimeRangePreference extends DialogPreference {
     private int startHour = 18, startMinute = 0, endHour = 23, endMinute = 0;
     private TimePicker startPicker, endPicker;
