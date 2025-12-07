@@ -57,35 +57,35 @@ public class EmailNotificationService {
      * @param motesOff List of motes that just turned OFF
      */
     public void sendGroupedEmailNotification(List<String> motesOn, List<String> motesOff) {
-        Log.d(TAG, "sendGroupedEmailNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
-        Log.d(TAG, "Motes ON: " + motesOn);
-        Log.d(TAG, "Motes OFF: " + motesOff);
+        //Log.d(TAG, "sendGroupedEmailNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
+        //Log.d(TAG, "Motes ON: " + motesOn);
+        //Log.d(TAG, "Motes OFF: " + motesOff);
 
         // Check if email notifications are enabled in preferences
         boolean emailEnabled = prefs.getBoolean("pref_email_notifications_enabled", false);
-        Log.d(TAG, "Email notifications enabled in prefs: " + emailEnabled);
+        //Log.d(TAG, "Email notifications enabled in prefs: " + emailEnabled);
         if (!emailEnabled) {
-            Log.d(TAG, "Email notifications disabled in preferences - skipping email");
+            //Log.d(TAG, "Email notifications disabled in preferences - skipping email");
             return;
         }
 
         // Check if credentials are configured
         if (!isConfigured()) {
-            Log.d(TAG, "Email notifications not configured (missing recipient email) - skipping email");
+            //Log.d(TAG, "Email notifications not configured (missing recipient email) - skipping email");
             return;
         }
 
         // Check if recipient email is set
         String recipientEmail = prefs.getString("pref_email_recipient", "");
         if (recipientEmail == null || recipientEmail.isEmpty()) {
-            Log.d(TAG, "No recipient email address configured - skipping email");
+            //Log.d(TAG, "No recipient email address configured - skipping email");
             return;
         }
 
         // Check if today is in allowed email notification days
         Set<String> allowedDays = prefs.getStringSet("pref_email_notification_days", null);
         if (allowedDays == null || allowedDays.isEmpty()) {
-            Log.d(TAG, "No email notification days set - skipping email");
+            //Log.d(TAG, "No email notification days set - skipping email");
             return;
         }
 
@@ -102,16 +102,16 @@ public class EmailNotificationService {
             case Calendar.SUNDAY: today = "Sun"; break;
         }
         if (today == null || !allowedDays.contains(today)) {
-            Log.d(TAG, "Today (" + today + ") not in allowed email notification days - skipping email");
+            //Log.d(TAG, "Today (" + today + ") not in allowed email notification days - skipping email");
             return;
         }
 
         // Check if current time is in allowed range
         String timeRange = prefs.getString("pref_email_notification_time_range", "08:00-20:00");
-        Log.d(TAG, "Email time range check: raw value from SharedPreferences: " + timeRange);
+        //Log.d(TAG, "Email time range check: raw value from SharedPreferences: " + timeRange);
         String[] parts = timeRange.split("-");
         if (parts.length != 2) {
-            Log.d(TAG, "Email time range check: invalid format: " + timeRange);
+            //Log.d(TAG, "Email time range check: invalid format: " + timeRange);
             return;
         }
 
@@ -123,9 +123,9 @@ public class EmailNotificationService {
             startMinute = Integer.parseInt(startParts[1]);
             endHour = Integer.parseInt(endParts[0]);
             endMinute = Integer.parseInt(endParts[1]);
-            Log.d(TAG, "Email time range check: start=" + startHour + ":" + startMinute + ", end=" + endHour + ":" + endMinute);
+            //Log.d(TAG, "Email time range check: start=" + startHour + ":" + startMinute + ", end=" + endHour + ":" + endMinute);
         } catch (Exception e) {
-            Log.d(TAG, "Email time range check: error parsing time range: " + timeRange);
+            //Log.d(TAG, "Email time range check: error parsing time range: " + timeRange);
             return;
         }
 
@@ -143,17 +143,17 @@ public class EmailNotificationService {
             inRange = (now >= start || now <= end);
         }
 
-        Log.d(TAG, "Email time range check: now=" + nowHour + ":" + nowMinute + ", inRange=" + inRange);
+        //Log.d(TAG, "Email time range check: now=" + nowHour + ":" + nowMinute + ", inRange=" + inRange);
         if (!inRange) {
-            Log.d(TAG, "Current time not in allowed email notification range (" + timeRange + ") - skipping email");
+            //Log.d(TAG, "Current time not in allowed email notification range (" + timeRange + ") - skipping email");
             return;
         }
 
-        Log.d(TAG, "Preparing to send email notification to: " + recipientEmail);
+        //Log.d(TAG, "Preparing to send email notification to: " + recipientEmail);
         // Send HTTP notification asynchronously
         sendHttpNotificationAsync(recipientEmail, motesOn, motesOff);
 
-        Log.d(TAG, "HTTP notification scheduled to be sent");
+        //Log.d(TAG, "HTTP notification scheduled to be sent");
     }
 
     /**
@@ -177,15 +177,15 @@ public class EmailNotificationService {
      * Must be called from a background thread.
      */
     private void sendHttpNotification(String recipientEmail, List<String> motesOn, List<String> motesOff) throws Exception {
-        Log.d(TAG, "Sending HTTP POST to: " + SERVER_URL);
+        //Log.d(TAG, "Sending HTTP POST to: " + SERVER_URL);
 
         // Convert lists to comma-separated strings
         String recipientEmailParam = recipientEmail;
         String motesOnParam = String.join(",", motesOn);
         String motesOffParam = String.join(",", motesOff);
 
-        Log.d(TAG, "motesOn: " + motesOnParam);
-        Log.d(TAG, "motesOff: " + motesOffParam);
+        //Log.d(TAG, "motesOn: " + motesOnParam);
+        //Log.d(TAG, "motesOff: " + motesOffParam);
 
         // Create OkHttp client
         OkHttpClient client = new OkHttpClient.Builder()
@@ -216,15 +216,6 @@ public class EmailNotificationService {
 
             String responseBody = response.body() != null ? response.body().string() : "";
             Log.i(TAG, "HTTP POST successful: " + response.code() + " - " + responseBody);
-        }
-    }
-
-    /**
-     * Shutdown the executor service when no longer needed
-     */
-    public void shutdown() {
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
         }
     }
 }

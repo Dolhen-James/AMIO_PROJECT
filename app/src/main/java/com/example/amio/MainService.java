@@ -68,7 +68,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.i(TAG, "onCreate() - Service created");
+        Log.i(TAG, "Service created");
 
         // Initialize SharedPreferences using Context directly
         prefs = getSharedPreferences("amio_settings", MODE_PRIVATE);
@@ -87,15 +87,15 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         // Start periodic data fetching
         startPeriodicFetch();
 
-        // Broadcast service running state for UI sync
-        broadcastResult("Service started", null);
+        // Broadcast initial state for UI sync
+        broadcastResultWithErrors("Service started", null, new ArrayList<>());
 
         //Log.i(TAG, "onCreate() - Service initialization complete");
 
     }
 
     private void startPeriodicFetch() {
-        Log.d(TAG, "Starting periodic fetch task with interval: " + fetchIntervalMs + " ms");
+        //Log.d(TAG, "Starting periodic fetch task with interval: " + fetchIntervalMs + " ms");
         stopPeriodicFetch();
         timer = new Timer();
         task = new TimerTask() {
@@ -132,12 +132,12 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         if ("pref_polling_interval".equals(key)) {
             fetchIntervalMs = getPollingIntervalMs();
             startPeriodicFetch();
-            Log.d(TAG, "Polling interval changed, timer restarted: " + fetchIntervalMs + " ms");
+            //Log.d(TAG, "Polling interval changed, timer restarted: " + fetchIntervalMs + " ms");
         }
     }
 
     private void fetchDataFromServer() {
-        Log.d(TAG, "Fetching data from server for all lights...");
+        //Log.d(TAG, "Fetching data from server for all lights...");
 
         String baseUrl = prefs.getString("server_url", "http://peniche.pakbo-et-lombrik.fr:8000"); // ceci est notre mock api
 
@@ -202,7 +202,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
         String status;
         if (fetchErrors.isEmpty()) {
             status = "Data fetched successfully";
-            Log.d(TAG, "All fetches successful - no errors");
+            //Log.d(TAG, "All fetches successful - no errors");
         } else if (successfulFetches == 0) {
             status = "Failed to fetch data";
             Log.e(TAG, "All fetches failed - " + fetchErrors.size() + " errors");
@@ -211,7 +211,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
             Log.w(TAG, "Partial success - " + successfulFetches + " succeeded, " + fetchErrors.size() + " failed");
         }
 
-        Log.d(TAG, "Fetch complete - Status: " + status + ", Errors: " + fetchErrors);
+        //Log.d(TAG, "Fetch complete - Status: " + status + ", Errors: " + fetchErrors);
         broadcastResultWithErrors(status, null, fetchErrors);
     }
 
@@ -246,7 +246,7 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
             JSONObject rootObject = new JSONObject(jsonResponse);
             JSONArray dataArray = rootObject.getJSONArray("data");
 
-            Log.d(TAG, "Parsing " + dataArray.length() + " mote entries for " + lightLabel);
+            //Log.d(TAG, "Parsing " + dataArray.length() + " mote entries for " + lightLabel);
 
             for (int i = 0; i < dataArray.length(); i++) {
                 JSONObject item = dataArray.getJSONObject(i);
@@ -271,9 +271,8 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                     LightMoteState newState = new LightMoteState(lightLabel, moteId, value, timestamp);
                     lightMoteStates.put(uniqueKey, newState);
 
-
                     if (newState.isLightOn()) {
-                        Log.i(TAG, "New mote detected with light ON: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                        Log.i(TAG, "Light ON detected: " + lightLabel + "/" + moteId + " (" + value + " lux)");
                         motesJustTurnedOn.add(lightLabel + " - Mote " + moteId);
                     }
                 } else {
@@ -283,25 +282,25 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                     boolean statusChanged = existingState.updateState(value, timestamp);
                     boolean isNowOn = existingState.isLightOn();
 
-                    Log.d(TAG, "Update mote: " + lightLabel + " - " + moteId +
-                            " | prev=" + prevValue + " | new=" + value +
-                            " | wasOn=" + wasOn + " | isNowOn=" + isNowOn +
-                            " | changed=" + statusChanged);
+                    //Log.d(TAG, "Update mote: " + lightLabel + " - " + moteId +
+                    //        " | prev=" + prevValue + " | new=" + value +
+                    //        " | wasOn=" + wasOn + " | isNowOn=" + isNowOn +
+                    //        " | changed=" + statusChanged);
 
                     // Detect changes
                     if (statusChanged) {
                         if (!wasOn && isNowOn) {
-                            Log.i(TAG, "Light turned ON: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                            Log.i(TAG, "Light ON: " + lightLabel + "/" + moteId + " (" + value + " lux)");
                             motesJustTurnedOn.add(lightLabel + " - Mote " + moteId);
                         } else if (wasOn && !isNowOn) {
-                            Log.i(TAG, "Light turned OFF: " + lightLabel + " - " + moteId + " (value=" + value + ")");
+                            Log.i(TAG, "Light OFF: " + lightLabel + "/" + moteId + " (" + value + " lux)");
                             motesJustTurnedOff.add(lightLabel + " - Mote " + moteId);
                         }
                     }
                 }
             }
 
-            Log.d(TAG, "Parsing complete for " + lightLabel + ". Total light-mote combinations tracked: " + lightMoteStates.size());
+            //Log.d(TAG, "Parsing complete for " + lightLabel + ". Total light-mote combinations tracked: " + lightMoteStates.size());
 
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing JSON for " + lightLabel, e);
@@ -310,65 +309,14 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
 
 
     /**
-     * Broadcast service results to MainActivity
-     * It is not really used anymore since it does not communicate errors, see broadcastResultWithErrors()
-     */
-    private void broadcastResult(String status, String jsonData) {
-        Log.d(TAG, "broadcastResult() called - status: " + status);
-
-        Intent intent = new Intent(ACTION_RESULT);
-        intent.setPackage(getPackageName());
-
-        intent.putExtra(EXTRA_STATUS, status);
-        intent.putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis());
-        intent.putExtra(EXTRA_SENSOR_COUNT, lightMoteStates.size());
-
-        int lightsOnCount = 0;
-        for (LightMoteState state : lightMoteStates.values()) {
-            if (state.isLightOn()) {
-                lightsOnCount++;
-            }
-        }
-        intent.putExtra(EXTRA_LIGHTS_ON_COUNT, lightsOnCount);
-
-        if (jsonData != null) {
-            intent.putExtra(EXTRA_DATA, jsonData);
-        }
-
-        try {
-            JSONArray sensorDetailsArray = new JSONArray();
-            for (LightMoteState state : lightMoteStates.values()) {
-                JSONObject sensorObject = new JSONObject();
-                sensorObject.put("light", state.getLightLabel());
-                sensorObject.put("mote", state.getMoteId());
-                sensorObject.put("value", state.getCurrentValue());
-                sensorObject.put("timestamp", state.getLastUpdated());
-                sensorObject.put("lightOn", state.isLightOn());
-                sensorDetailsArray.put(sensorObject);
-            }
-
-            String sensorDetailsJson = sensorDetailsArray.toString();
-            intent.putExtra(EXTRA_SENSOR_DETAILS, sensorDetailsJson);
-
-            Log.d(TAG, "Sensor details JSON length: " + sensorDetailsJson.length());
-        } catch (JSONException e) {
-            Log.e(TAG, "Error building sensor details JSON", e);
-            intent.putExtra(EXTRA_SENSOR_DETAILS, "[]");
-        }
-
-        sendBroadcast(intent);
-        Log.d(TAG, "Broadcast sent - light-mote combinations=" + lightMoteStates.size() + ", lights_on=" + lightsOnCount);
-    }
-
-    /**
      * Broadcast service results with fetch error information to MainActivity, enables better debugging and UI feedback
      */
     private void broadcastResultWithErrors(String status, String jsonData, List<String> fetchErrors) {
-        Log.d(TAG, "broadcastResultWithErrors() called - status: " + status + ", errors: " + (fetchErrors != null ? fetchErrors.size() : "null"));
+        //Log.d(TAG, "broadcastResultWithErrors() called - status: " + status + ", errors: " + (fetchErrors != null ? fetchErrors.size() : "null"));
 
-        if (fetchErrors != null && !fetchErrors.isEmpty()) {
-            Log.d(TAG, "Errors to broadcast: " + fetchErrors);
-        }
+        //if (fetchErrors != null && !fetchErrors.isEmpty()) {
+        //    Log.d(TAG, "Errors to broadcast: " + fetchErrors);
+        //}
 
         Intent intent = new Intent(ACTION_RESULT);
         intent.setPackage(getPackageName());
@@ -398,13 +346,14 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
                 }
                 String errorsJson = errorsArray.toString();
                 intent.putExtra(EXTRA_FETCH_ERRORS, errorsJson);
-                Log.d(TAG, "Added fetch errors to intent: " + errorsJson);
+                //Log.d(TAG, "Added fetch errors to intent: " + errorsJson);
             } catch (Exception e) {
                 Log.e(TAG, "Error building fetch errors JSON", e);
             }
-        } else {
-            Log.d(TAG, "No fetch errors to broadcast");
         }
+        //else {
+        //    Log.d(TAG, "No fetch errors to broadcast");
+        //}
 
         try {
             JSONArray sensorDetailsArray = new JSONArray();
@@ -421,38 +370,33 @@ public class MainService extends Service implements SharedPreferences.OnSharedPr
             String sensorDetailsJson = sensorDetailsArray.toString();
             intent.putExtra(EXTRA_SENSOR_DETAILS, sensorDetailsJson);
 
-            Log.d(TAG, "Sensor details JSON length: " + sensorDetailsJson.length());
+            //Log.d(TAG, "Sensor details JSON length: " + sensorDetailsJson.length());
         } catch (JSONException e) {
             Log.e(TAG, "Error building sensor details JSON", e);
             intent.putExtra(EXTRA_SENSOR_DETAILS, "[]");
         }
 
         sendBroadcast(intent);
-        Log.d(TAG, "Broadcast sent with errors - light-mote combinations=" + lightMoteStates.size() + ", lights_on=" + lightsOnCount + ", errors=" + fetchErrors.size());
+        //Log.d(TAG, "Broadcast sent with errors - light-mote combinations=" + lightMoteStates.size() + ", lights_on=" + lightsOnCount + ", errors=" + fetchErrors.size());
     }
-
-    public Map<String, LightMoteState> getLightMoteStates() {
-        return new ConcurrentHashMap<>(lightMoteStates);
-    }
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand() - Service command received. flags=" + flags + ", startId=" + startId);
+        //Log.i(TAG, "onStartCommand() - Service command received. flags=" + flags + ", startId=" + startId);
 
         if (intent != null && ACTION_REQUEST_UPDATE.equals(intent.getAction())) {
-            Log.d(TAG, "Received request for immediate update");
+            //Log.d(TAG, "Received request for immediate update");
             broadcastResultWithErrors("Current state", null, new ArrayList<>());
         }
 
-        Log.i(TAG, "onStartCommand() - Returning START_STICKY to ensure service restarts after kill");
+        //Log.i(TAG, "onStartCommand() - Returning START_STICKY to ensure service restarts after kill");
         return START_STICKY; // comme vu en TP
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Service destroyed");
+        Log.i(TAG, "Service destroyed");
 
             stopPeriodicFetch();
             prefs.unregisterOnSharedPreferenceChangeListener(this);

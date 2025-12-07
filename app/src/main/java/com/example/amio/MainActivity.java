@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Log.d(TAG, "MainActivity created");
+        //Log.d(TAG, "MainActivity created");
 
 
         // Set up the top app bar (Toolbar)
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         // Initialize sensor data display
         // Les strings sont stockés dans res/values/strings.xml pour centralisation
         tvSensorData.setText(getString(R.string.sensor_no_data));
-        Log.d(TAG, "UI elements initialized - tvSensorData is " + (tvSensorData != null ? "NOT NULL" : "NULL"));
+        //Log.d(TAG, "UI elements initialized - tvSensorData is " + (tvSensorData != null ? "NOT NULL" : "NULL"));
 
     }
 
@@ -149,46 +149,58 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
 
         // Register receiver with IntentFilter
         IntentFilter filter = new IntentFilter(MainService.ACTION_RESULT);
-        // From Android 13 (API 33) the registerReceiver call must explicitly declare whether
-        // the receiver is exported. Use RECEIVER_NOT_EXPORTED because this receiver
-        // is intended for app-internal communication with the service.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(serviceReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(serviceReceiver, filter);
+        try {
+            // From Android 13 (API 33) the registerReceiver call must explicitly declare whether
+            // the receiver is exported. Use RECEIVER_NOT_EXPORTED because this receiver
+            // is intended for app-internal communication with the service.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(serviceReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(serviceReceiver, filter);
+            }
+            //Log.d(TAG, "BroadcastReceiver registered for action: " + MainService.ACTION_RESULT);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register broadcast receiver", e);
         }
-
-        Log.d(TAG, "BroadcastReceiver registered for action: " + MainService.ACTION_RESULT);
     }
 
     /**
      * Start the MainService
      */
     private void startService() {
-        Log.d(TAG, "Starting MainService");
-        Intent intent = new Intent(this, MainService.class);
-        startService(intent);
+        //Log.d(TAG, "Starting MainService");
+        try {
+            Intent intent = new Intent(this, MainService.class);
+            startService(intent);
 
         // Unified UI update
         updateServiceUI(this);
 
-        // Update SharedPreferences so SettingsActivity reflects the change
-        SettingsManager settingsManager = new SettingsManager(this);
-        settingsManager.setBoolean("pref_service_enabled", true);
+            // Update SharedPreferences so SettingsActivity reflects the change
+            SettingsManager settingsManager = new SettingsManager(this);
+            settingsManager.setBoolean("pref_service_enabled", true);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start service", e);
+            Toast.makeText(this, "Failed to start service", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
      * Stop the MainService
      */
     private void stopService() {
-        Log.d(TAG, "Stopping MainService");
-        Intent intent = new Intent(this, MainService.class);
-        stopService(intent);
-        updateServiceStatus();
+        //Log.d(TAG, "Stopping MainService");
+        try {
+            Intent intent = new Intent(this, MainService.class);
+            stopService(intent);
+            updateServiceStatus();
 
-        // Update SharedPreferences so SettingsActivity reflects the change
-        SettingsManager settingsManager = new SettingsManager(this);
-        settingsManager.setBoolean("pref_service_enabled", false);
+            // Update SharedPreferences so SettingsActivity reflects the change
+            SettingsManager settingsManager = new SettingsManager(this);
+            settingsManager.setBoolean("pref_service_enabled", false);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to stop service", e);
+        }
     }
 
     /**
@@ -216,8 +228,8 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
             tvBootStatus.setText(startOnBoot ? "true" : "false");
         }
 
-        Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped") +
-                ", start on boot: " + startOnBoot);
+        //Log.d(TAG, "Service status updated: " + (isServiceRunning ? "Running" : "Stopped") +
+        //        ", start on boot: " + startOnBoot);
 
 
     }
@@ -245,10 +257,10 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
      * @param sensorDataJson JSON string containing detailed sensor information
      */
     public void updateSensorData(int sensorCount, int lightsOnCount, String status, String sensorDataJson, String fetchErrorsJson) {
-        Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
-                ", lightsOnCount=" + lightsOnCount + ", status=" + status +
-                ", has_errors=" + (fetchErrorsJson != null) +
-                ", errorJson=" + fetchErrorsJson);
+        //Log.d(TAG, "updateSensorData() called with sensorCount=" + sensorCount +
+        //        ", lightsOnCount=" + lightsOnCount + ", status=" + status +
+        //        ", has_errors=" + (fetchErrorsJson != null) +
+        //        ", errorJson=" + fetchErrorsJson);
 
         StringBuilder sb = new StringBuilder();
 
@@ -265,14 +277,15 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
                 for (int i = 0; i < errorsArray.length(); i++) {
                     String error = errorsArray.getString(i);
                     fetchErrors.add(error);
-                    Log.d(TAG, "Error " + i + ": " + error);
+                    //Log.d(TAG, "Error " + i + ": " + error);
                 }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error parsing fetch errors JSON", e);
             }
-        } else {
-            Log.d(TAG, "No fetch errors JSON received");
         }
+        //else {
+        //    Log.d(TAG, "No fetch errors JSON received");
+        //}
 
         //Log.d(TAG, "Total fetch errors parsed: " + fetchErrors.size());
         sb.append(LightMoteState.formatSummary(lightsOnCount, status, fetchErrors));
@@ -286,8 +299,8 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
         }
 
         String finalText = sb.toString();
-        Log.d(TAG, "Setting tvSensorData text (length=" + finalText.length() + ")");
-        Log.d(TAG, "First 200 chars: " + (finalText.length() > 200 ? finalText.substring(0, 200) : finalText));
+        //Log.d(TAG, "Setting tvSensorData text (length=" + finalText.length() + ")");
+        //Log.d(TAG, "First 200 chars: " + (finalText.length() > 200 ? finalText.substring(0, 200) : finalText));
 
         tvSensorData.setText(finalText);
 
@@ -298,7 +311,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
             tvSensorData.setTextColor(getResources().getColor(R.color.sensor_all_clear));
         }
 
-        Log.d(TAG, "updateSensorData() completed successfully");
+        //Log.d(TAG, "updateSensorData() completed successfully");
 
 
     }
@@ -330,7 +343,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
 
         // If service is running, request an immediate update
         if (isServiceRunning) {
-            Log.d(TAG, "Service is running - requesting immediate data update");
+            //Log.d(TAG, "Service is running - requesting immediate data update");
             Intent updateRequest = new Intent(this, MainService.class);
             updateRequest.setAction(MainService.ACTION_REQUEST_UPDATE);
             startService(updateRequest);
@@ -340,13 +353,13 @@ public class MainActivity extends AppCompatActivity implements ServiceBroadcastC
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d(TAG, "onPause() called - MainActivity going to background");
+        //Log.d(TAG, "onPause() called - MainActivity going to background");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy() called - unregistering receiver");
+        //Log.d(TAG, "onDestroy() called - unregistering receiver");
         // Unregister broadcast receiver to prevent memory leaks
         if (serviceReceiver != null) {
             unregisterReceiver(serviceReceiver);

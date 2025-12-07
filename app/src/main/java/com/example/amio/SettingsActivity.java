@@ -138,12 +138,12 @@ if (isChecked) {
                     android.content.SharedPreferences.Editor editor = prefs.edit();
                     editor.putStringSet("pref_notification_days_notif", cleanedDays);
                     editor.apply();
-                    android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
+                    //android.util.Log.d("SettingsActivity", "Notification days changed: values=" + cleanedDays + ", displayNames=" + displayNames.toString());
                     // Log actual stored values for verification
-                    java.util.Set<String> storedDays = prefs.getStringSet("pref_notification_days_notif", new java.util.HashSet<>());
-                    android.util.Log.d("SettingsActivity", "Stored notification days in SharedPreferences: " + storedDays);
-                    String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
-                    android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
+                    //java.util.Set<String> storedDays = prefs.getStringSet("pref_notification_days_notif", new java.util.HashSet<>());
+                    //android.util.Log.d("SettingsActivity", "Stored notification days in SharedPreferences: " + storedDays);
+                    //String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
+                    //android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
                     return true;
                 });
             }
@@ -153,15 +153,15 @@ if (isChecked) {
             if (timeRangePref != null) {
                 timeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
                     String newTimeRange = (String) newValue;
-                    String[] parts = newTimeRange.split("-");
-                    if (parts.length == 2) {
-                        android.util.Log.d("SettingsActivity", "Notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
-                    } else {
-                        android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
-                    }
+                    //String[] parts = newTimeRange.split("-");
+                    //if (parts.length == 2) {
+                    //    android.util.Log.d("SettingsActivity", "Notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
+                    //} else {
+                    //    android.util.Log.d("SettingsActivity", "Notification time range changed: invalid format: " + newTimeRange);
+                    //}
                     // Log actual stored value for verification
-                    String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
-                    android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
+                    //String storedTimeRange = prefs.getString("pref_notification_time_range_notif", "08:00-20:00");
+                    //android.util.Log.d("SettingsActivity", "Stored notification time range in SharedPreferences: " + storedTimeRange);
                     return true;
                 });
             }
@@ -190,7 +190,7 @@ if (isChecked) {
                 emailNotifPref.setOnPreferenceChangeListener((preference, newValue) -> {
                     boolean isChecked = (Boolean) newValue;
                     settingsManager.setBoolean("pref_email_notifications_enabled", isChecked);
-                    android.util.Log.d("SettingsActivity", "Email notifications enabled: " + isChecked);
+                    //android.util.Log.d("SettingsActivity", "Email notifications enabled: " + isChecked);
                     return true;
                 });
             }
@@ -205,7 +205,7 @@ if (isChecked) {
                     String newEmail = (String) newValue;
                     settingsManager.setString("pref_email_recipient", newEmail);
                     emailRecipientPref.setSummary(newEmail.isEmpty() ? "Email address to receive notifications" : "Current: " + newEmail);
-                    android.util.Log.d("SettingsActivity", "Recipient email changed: " + newEmail);
+                    //android.util.Log.d("SettingsActivity", "Recipient email changed: " + newEmail);
                     return true;
                 });
             }
@@ -220,7 +220,7 @@ if (isChecked) {
                     String newClientId = (String) newValue;
                     settingsManager.setString("pref_email_client_id", newClientId);
                     clientIdPref.setSummary(newClientId.isEmpty() ? "Client ID for NotificationAPI service" : "Configured");
-                    android.util.Log.d("SettingsActivity", "NotificationAPI Client ID updated");
+                    //android.util.Log.d("SettingsActivity", "NotificationAPI Client ID updated");
                     return true;
                 });
             }
@@ -235,7 +235,7 @@ if (isChecked) {
                     String newClientSecret = (String) newValue;
                     settingsManager.setString("pref_email_client_secret", newClientSecret);
                     clientSecretPref.setSummary(newClientSecret.isEmpty() ? "Client Secret for NotificationAPI service" : "Configured");
-                    android.util.Log.d("SettingsActivity", "NotificationAPI Client Secret updated");
+                    //android.util.Log.d("SettingsActivity", "NotificationAPI Client Secret updated");
                     return true;
                 });
             }
@@ -267,7 +267,7 @@ if (isChecked) {
                     android.content.SharedPreferences.Editor editor = prefs.edit();
                     editor.putStringSet("pref_email_notification_days", cleanedDays);
                     editor.apply();
-                    android.util.Log.d("SettingsActivity", "Email notification days changed: values=" + cleanedDays);
+                    //android.util.Log.d("SettingsActivity", "Email notification days changed: values=" + cleanedDays);
                     return true;
                 });
             }
@@ -277,12 +277,12 @@ if (isChecked) {
             if (emailTimeRangePref != null) {
                 emailTimeRangePref.setOnPreferenceChangeListener((preference, newValue) -> {
                     String newTimeRange = (String) newValue;
-                    String[] parts = newTimeRange.split("-");
-                    if (parts.length == 2) {
-                        android.util.Log.d("SettingsActivity", "Email notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
-                    } else {
-                        android.util.Log.d("SettingsActivity", "Email notification time range changed: invalid format: " + newTimeRange);
-                    }
+                    //String[] parts = newTimeRange.split("-");
+                    //if (parts.length == 2) {
+                    //    android.util.Log.d("SettingsActivity", "Email notification time range changed: start=" + parts[0] + ", end=" + parts[1]);
+                    //} else {
+                    //    android.util.Log.d("SettingsActivity", "Email notification time range changed: invalid format: " + newTimeRange);
+                    //}
                     return true;
                 });
             }
@@ -347,7 +347,7 @@ if (isChecked) {
 
             // ✅ Check ACTUAL service state (not just SharedPreferences)
             boolean isServiceActuallyRunning = isServiceRunning();
-            android.util.Log.d("SettingsActivity", "onResume() - Service actually running: " + isServiceActuallyRunning);
+            //android.util.Log.d("SettingsActivity", "onResume() - Service actually running: " + isServiceActuallyRunning);
 
             // Sync "Enable Service" checkbox with actual service state
             android.preference.CheckBoxPreference servicePref = (android.preference.CheckBoxPreference) findPreference("pref_service_enabled");
@@ -357,7 +357,7 @@ if (isChecked) {
                 // Also update SharedPreferences to match reality if they differ
                 boolean prefValue = settingsManager.getBoolean("pref_service_enabled", false);
                 if (isServiceActuallyRunning != prefValue) {
-                    android.util.Log.d("SettingsActivity", "Syncing pref_service_enabled with actual service state: " + isServiceActuallyRunning);
+                    //android.util.Log.d("SettingsActivity", "Syncing pref_service_enabled with actual service state: " + isServiceActuallyRunning);
                     settingsManager.setBoolean("pref_service_enabled", isServiceActuallyRunning);
                 }
             }
@@ -401,6 +401,34 @@ if (isChecked) {
             String clientSecret = settingsManager.getString("pref_email_client_secret", "");
             if (clientSecretPref != null) {
                 clientSecretPref.setSummary(clientSecret.isEmpty() ? "Client Secret for NotificationAPI service" : "Configured");
+            }
+
+            // Sync notification time range summary (mobile notifications)
+            com.example.amio.TimeRangePreference notifTimeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_notification_time_range_notif");
+            if (notifTimeRangePref != null) {
+                String notifTimeRange = settingsManager.getString("pref_notification_time_range_notif", "18:00-23:00");
+                if (notifTimeRange != null && notifTimeRange.matches("\\d{2}:\\d{2}-\\d{2}:\\d{2}")) {
+                    String[] parts = notifTimeRange.split("[-:]");
+                    int startHour = Integer.parseInt(parts[0]);
+                    int startMinute = Integer.parseInt(parts[1]);
+                    int endHour = Integer.parseInt(parts[2]);
+                    int endMinute = Integer.parseInt(parts[3]);
+                    notifTimeRangePref.setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
+                }
+            }
+
+            // Sync email notification time range summary
+            com.example.amio.TimeRangePreference emailTimeRangePref = (com.example.amio.TimeRangePreference) findPreference("pref_email_notification_time_range");
+            if (emailTimeRangePref != null) {
+                String emailTimeRange = settingsManager.getString("pref_email_notification_time_range", "18:00-23:00");
+                if (emailTimeRange != null && emailTimeRange.matches("\\d{2}:\\d{2}-\\d{2}:\\d{2}")) {
+                    String[] parts = emailTimeRange.split("[-:]");
+                    int startHour = Integer.parseInt(parts[0]);
+                    int startMinute = Integer.parseInt(parts[1]);
+                    int endHour = Integer.parseInt(parts[2]);
+                    int endMinute = Integer.parseInt(parts[3]);
+                    emailTimeRangePref.setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
+                }
             }
         }
 }

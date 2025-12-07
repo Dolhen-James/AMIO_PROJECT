@@ -100,10 +100,6 @@ public class LightMoteState {
         return currentValue;
     }
 
-    public double getPreviousValue() {
-        return previousValue;
-    }
-
     public long getLastUpdated() {
         return lastUpdated;
     }
@@ -119,13 +115,6 @@ public class LightMoteState {
      */
     public void setLightOnStatus(boolean lightOn) {
         this.isLightOn = lightOn;
-    }
-
-    /**
-     * Get a unique key for this light-mote combination
-     */
-    public String getUniqueKey() {
-        return lightLabel + "_" + moteId;
     }
 
     /**

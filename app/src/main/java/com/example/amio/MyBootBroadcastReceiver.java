@@ -20,33 +20,35 @@ public class MyBootBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Log.d(TAG, "BOOT_COMPLETED received");
+            //Log.d(TAG, "BOOT_COMPLETED received");
 
             SharedPreferences prefs = context.getSharedPreferences("amio_prefs", Context.MODE_PRIVATE);
             boolean startServiceOnBoot = prefs.getBoolean("start_service_on_boot", false);
 
-            Log.d(TAG, "Start on boot preference: " + startServiceOnBoot);
+            //Log.d(TAG, "Start on boot preference: " + startServiceOnBoot);
 
             if (startServiceOnBoot) {
                 try {
                     // Update service enabled preference for UI sync
                     SharedPreferences settingsPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
                     settingsPrefs.edit().putBoolean("pref_service_enabled", true).apply();
-                    Log.d(TAG, "Updated pref_service_enabled to true");
+                    //Log.d(TAG, "Updated pref_service_enabled to true");
 
                     // Start the service
                     Intent serviceIntent = new Intent(context, MainService.class);
                     context.startService(serviceIntent);
 
-                    Log.i(TAG, "MainService start requested successfully");
+                    Log.i(TAG, "Service started at boot");
                 } catch (Exception e) {
                     Log.e(TAG, "Error starting MainService at boot", e);
                 }
-            } else {
-                Log.d(TAG, "Start on boot disabled, service not started");
             }
-        } else {
-            Log.d(TAG, "Received intent action: " + intent.getAction());
+            //else {
+            //    Log.d(TAG, "Start on boot disabled, service not started");
+            //}
         }
+        //else {
+        //    Log.d(TAG, "Received intent action: " + intent.getAction());
+        //}
     }
 }

@@ -29,6 +29,18 @@ public class TimeRangePreference extends DialogPreference {
     @Override
     protected void onBindDialogView(View view) {
         super.onBindDialogView(view);
+        
+        // Load current values from SharedPreferences before showing the dialog
+        android.content.SharedPreferences sharedPreferences = getContext().getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
+        String currentValue = sharedPreferences.getString(getKey(), null);
+        if (currentValue != null && currentValue.matches("\\d{2}:\\d{2}-\\d{2}:\\d{2}")) {
+            String[] parts = currentValue.split("[-:]");
+            startHour = Integer.parseInt(parts[0]);
+            startMinute = Integer.parseInt(parts[1]);
+            endHour = Integer.parseInt(parts[2]);
+            endMinute = Integer.parseInt(parts[3]);
+        }
+        
         startPicker = view.findViewById(R.id.startTimePicker);
         endPicker = view.findViewById(R.id.endTimePicker);
         startPicker.setIs24HourView(true);
@@ -53,7 +65,7 @@ public class TimeRangePreference extends DialogPreference {
             sharedPreferences.edit().putString(getKey(), value).apply();
 
             setSummary("From " + String.format("%02d:%02d", startHour, startMinute) + " to " + String.format("%02d:%02d", endHour, endMinute));
-            android.util.Log.d("TimeRangePreference", "Time range changed for key '" + getKey() + "': " + value);
+            //android.util.Log.d("TimeRangePreference", "Time range changed for key '" + getKey() + "': " + value);
         }
     }
 

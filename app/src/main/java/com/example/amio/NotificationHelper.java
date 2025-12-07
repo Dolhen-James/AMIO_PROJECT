@@ -61,16 +61,18 @@ public class NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.POST_NOTIFICATIONS)
                     != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
+                //Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
                 ActivityCompat.requestPermissions(activity,
                         new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
                         PERMISSION_REQUEST_POST_NOTIFICATIONS);
-            } else {
-                Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
             }
-        } else {
-            Log.d(TAG, "Android version < 13, POST_NOTIFICATIONS not required");
+            //else {
+            //    Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
+            //}
         }
+        //else {
+        //    Log.d(TAG, "Android version < 13, POST_NOTIFICATIONS not required");
+        //}
     }
 
     /**
@@ -79,7 +81,7 @@ public class NotificationHelper {
     public static void handlePermissionResult(Activity activity, int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_POST_NOTIFICATIONS) {
             if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "POST_NOTIFICATIONS permission granted");
+                //Log.d(TAG, "POST_NOTIFICATIONS permission granted");
                 android.widget.Toast.makeText(activity, "Notification permission granted", android.widget.Toast.LENGTH_SHORT).show();
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission denied");
@@ -102,7 +104,7 @@ public class NotificationHelper {
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
-                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
+                //Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
             } else {
                 Log.w(TAG, "NotificationManager is null - cannot create channel");
             }
@@ -116,7 +118,7 @@ public class NotificationHelper {
      * @param motesOff List of motes that just turned OFF
      */
     public void sendGroupedNotification(List<String> motesOn, List<String> motesOff) {
-        Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
+        //Log.d(TAG, "sendGroupedNotification() - ON: " + motesOn.size() + ", OFF: " + motesOff.size());
 
         // Always attempt to send email notifications (has its own preference checks)
         try {
@@ -128,14 +130,14 @@ public class NotificationHelper {
         // Check if in-app notifications are enabled in preferences
         boolean notificationsEnabled = prefs.getBoolean("pref_notifications_enabled_notif", true);
         if (!notificationsEnabled) {
-            Log.d(TAG, "Notifications disabled in preferences - skipping notification");
+            //Log.d(TAG, "Notifications disabled in preferences - skipping notification");
             return;
         }
 
         // Check if today is in allowed notification days
         java.util.Set<String> allowedDays = prefs.getStringSet("pref_notification_days_notif", null);
         if (allowedDays == null || allowedDays.isEmpty()) {
-            Log.d(TAG, "No notification days set - skipping notification");
+            //Log.d(TAG, "No notification days set - skipping notification");
             return;
         }
         java.util.Calendar calendar = java.util.Calendar.getInstance();
@@ -151,18 +153,18 @@ public class NotificationHelper {
             case java.util.Calendar.SUNDAY: today = "Sun"; break;
         }
         if (today == null || !allowedDays.contains(today)) {
-            Log.d(TAG, "Today (" + today + ") not in allowed notification days - skipping notification");
+            //Log.d(TAG, "Today (" + today + ") not in allowed notification days - skipping notification");
             return;
         }
 
         // Always read the latest time range from SharedPreferences
     SharedPreferences freshPrefs = context.getSharedPreferences("amio_settings", Context.MODE_PRIVATE);
     String timeRange = freshPrefs.getString("pref_notification_time_range_notif", "08:00-20:00");
-    Log.d(TAG, "Time range check: raw value from SharedPreferences: " + timeRange);
+    //Log.d(TAG, "Time range check: raw value from SharedPreferences: " + timeRange);
     String[] parts = timeRange.split("-");
         if (parts.length != 2) {
-            Log.d(TAG, "Time range check: invalid format: " + timeRange);
-            Log.d(TAG, "Invalid time range format - skipping notification");
+            //Log.d(TAG, "Time range check: invalid format: " + timeRange);
+            //Log.d(TAG, "Invalid time range format - skipping notification");
             return;
         }
         String startTimeStr = parts[0];
@@ -175,10 +177,10 @@ public class NotificationHelper {
             startMinute = Integer.parseInt(startParts[1]);
             endHour = Integer.parseInt(endParts[0]);
             endMinute = Integer.parseInt(endParts[1]);
-            Log.d(TAG, "Time range check: start=" + startHour + ":" + startMinute + ", end=" + endHour + ":" + endMinute);
+            //Log.d(TAG, "Time range check: start=" + startHour + ":" + startMinute + ", end=" + endHour + ":" + endMinute);
         } catch (Exception e) {
-            Log.d(TAG, "Time range check: error parsing time range: " + timeRange);
-            Log.d(TAG, "Error parsing time range - skipping notification");
+            //Log.d(TAG, "Time range check: error parsing time range: " + timeRange);
+            //Log.d(TAG, "Error parsing time range - skipping notification");
             return;
         }
         int nowHour = calendar.get(java.util.Calendar.HOUR_OF_DAY);
@@ -187,16 +189,16 @@ public class NotificationHelper {
         int now = nowHour * 60 + nowMinute;
         int start = startHour * 60 + startMinute;
         int end = endHour * 60 + endMinute;
-        Log.d(TAG, "Time range check: now=" + nowHour + ":" + nowMinute + ", start=" + start + ", end=" + end);
+        //Log.d(TAG, "Time range check: now=" + nowHour + ":" + nowMinute + ", start=" + start + ", end=" + end);
         if (start <= end) {
             inRange = (now >= start && now <= end);
         } else {
             // Overnight range (e.g., 22:00-06:00)
             inRange = (now >= start || now <= end);
         }
-        Log.d(TAG, "Time range check: inRange=" + inRange);
+        //Log.d(TAG, "Time range check: inRange=" + inRange);
         if (!inRange) {
-            Log.d(TAG, "Current time not in allowed notification range (" + timeRange + ") - skipping notification");
+            //Log.d(TAG, "Current time not in allowed notification range (" + timeRange + ") - skipping notification");
             return;
         }
 

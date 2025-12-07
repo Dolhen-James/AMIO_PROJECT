@@ -15,10 +15,10 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "BroadcastReceiver.onReceive() called");
+        //Log.d(TAG, "BroadcastReceiver.onReceive() called");
 
         if (MainService.ACTION_RESULT.equals(intent.getAction())) {
-            Log.d(TAG, "Correct action received: " + MainService.ACTION_RESULT);
+            //Log.d(TAG, "Correct action received: " + MainService.ACTION_RESULT);
 
             // Extract data from broadcast
             String status = intent.getStringExtra(MainService.EXTRA_STATUS);
@@ -28,21 +28,21 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
             String sensorDataJson = intent.getStringExtra(MainService.EXTRA_SENSOR_DETAILS);
             String fetchErrorsJson = intent.getStringExtra(MainService.EXTRA_FETCH_ERRORS);
 
-            Log.d(TAG, "Received broadcast - status: " + status +
-                    ", sensors: " + sensorCount +
-                    ", lights_on: " + lightsOnCount +
-                    ", has_errors: " + (fetchErrorsJson != null));
-            Log.d(TAG, "Sensor JSON length: " + (sensorDataJson != null ? sensorDataJson.length() : "null"));
-            if (sensorDataJson != null && sensorDataJson.length() < 500) {
-                Log.d(TAG, "Sensor JSON: " + sensorDataJson);
-            }
+            //Log.d(TAG, "Received broadcast - status: " + status +
+            //        ", sensors: " + sensorCount +
+            //        ", lights_on: " + lightsOnCount +
+            //        ", has_errors: " + (fetchErrorsJson != null));
+            //Log.d(TAG, "Sensor JSON length: " + (sensorDataJson != null ? sensorDataJson.length() : "null"));
+            //if (sensorDataJson != null && sensorDataJson.length() < 500) {
+            //    Log.d(TAG, "Sensor JSON: " + sensorDataJson);
+            //}
 
             // Notify callback
             if (callback != null) {
                 callback.onServiceBroadcast(status, timestamp, sensorCount, lightsOnCount, sensorDataJson, fetchErrorsJson);
             }
 
-            Log.d(TAG, "Callback notified");
+            //Log.d(TAG, "Callback notified");
         } else {
             Log.w(TAG, "Received broadcast with unexpected action: " + intent.getAction());
         }
