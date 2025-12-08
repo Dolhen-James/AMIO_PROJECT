@@ -160,7 +160,6 @@ La demande d'envoi de mail suit les mêmes modalités que les notifications push
 
 **`EmailNotificationService.java`**
 - Service dédié à l'envoi de notifications par email
--
 
 #### Configuration dans les Settings
 Une section dédiée dans les paramètres permettra de configurer :
@@ -183,6 +182,7 @@ Une section dédiée dans les paramètres permettra de configurer :
 
 #### Description
 L'application permet de configurer dynamiquement l'URL du serveur API depuis lequel les données des capteurs sont récupérées. Cette flexibilité est essentielle pour le développement et les tests.
+Il est aussi possible de modifier l'intervalle d'actualisation des données avec le champ "Polling Interval"
 
 #### Fichiers concernés
 
